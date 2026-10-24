@@ -3,7 +3,7 @@ const special: Record<number, string> = {
   0x28: "Enter", 0x29: "Esc", 0x2a: "Bksp", 0x2b: "Tab",
   0x2c: "Space", 0x2d: "-", 0x2e: "=", 0x2f: "[", 0x30: "]",
   0x31: "\\", 0x33: ";", 0x34: "'", 0x35: "`",
-  0x36: ",", 0x37: ".", 0x38: "/", 0x39: "Caps",
+  0x36: ",", 0x37: ".", 0x38: "/", 0x39: "Caps", 0x4c: "Del",
   0x4f: "→", 0x50: "←", 0x51: "↓", 0x52: "↑",
   0xe0: "LCtrl", 0xe1: "LShift", 0xe2: "LAlt", 0xe3: "LGUI",
   0xe4: "RCtrl", 0xe5: "RShift", 0xe6: "RAlt", 0xe7: "RGUI",
@@ -23,6 +23,14 @@ export function keyboardUsageLabel(code: number): string | null {
   return special[usage] ?? null;
 }
 
+// ZMK stores implicit modifiers in the top byte of a key press usage (APPLY_MODS).
+const modBits: [number, string][] = [[0x11, "Ctrl"], [0x22, "Shift"], [0x44, "Alt"], [0x88, "GUI"]];
+
+export function implicitMods(code: number): string[] {
+  const mods = (code >>> 24) & 0xff;
+  return modBits.filter(([bits]) => mods & bits).map(([, name]) => name);
+}
+
 export function bindingLabel(
   behaviorId: number,
   param1: number,
@@ -34,6 +42,7 @@ export function bindingLabel(
   if (lower.includes("transparent")) return { title: "▽", subtitle: "Transparent" };
   if (lower === "none" || lower.includes("none behavior"))
     return { title: "—", subtitle: "None" };
+  if (lower.includes("momentary layer")) return { title: "MO " + param1, subtitle: "" };
   const isHoldTap = lower.includes("hold") && lower.includes("tap");
   const isKey = lower.includes("key press") || lower === "key press" || lower === "kp";
   if (isHoldTap || isKey) {
