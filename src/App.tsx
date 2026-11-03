@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { PAGES, Sidebar, type Page } from "./components/Shell";
-import { CombosPage } from "./pages/CombosPage";
 import { ConnectPage } from "./pages/ConnectPage";
 import { KeymapPage, type KeyFocus } from "./pages/KeymapPage";
 import { LayersPage } from "./pages/LayersPage";
-import { MacrosPage } from "./pages/MacrosPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { isDemo, useDemoStudio } from "./studio/demo";
 import { usePrefs } from "./studio/prefs";
@@ -44,8 +42,6 @@ export default function App() {
       {!studio.connected ? <ConnectPage studio={studio} onMenu={onMenu} />
         : page === "keymap" ? <KeymapPage studio={studio} onMenu={onMenu} prefs={prefs} focus={focus} />
         : page === "layers" ? <LayersPage studio={studio} onMenu={onMenu} prefs={prefs} onShowKey={showKey} />
-        : page === "macros" ? <MacrosPage studio={studio} onMenu={onMenu} />
-        : page === "combos" ? <CombosPage studio={studio} onMenu={onMenu} prefs={prefs} />
         : <SettingsPage studio={studio} onMenu={onMenu} prefs={prefs} />}
     </main>
   </div>;

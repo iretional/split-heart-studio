@@ -1,3 +1,4 @@
+import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import type { Keymap, KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { useState } from "react";
 import type { RemovedLayer, Studio } from "./useStudio";
@@ -30,7 +31,31 @@ for (const [n, cx, cy, deg] of [["50", 594, 510, 15], ["51", 658, 516, 20], ["52
   ["58", 1569 - 651, 607, 35], ["59", 1569 - 706, 572, 35], ["510", 1569 - 658, 516, -20], ["511", 1569 - 594, 510, -15]] as const)
   add(n, cx - 29, cy - 29, deg);
 
-const BEHAVIORS: Record<number, string> = { 1: "Key Press", 2: "Transparent", 3: "Momentary Layer", 4: "None" };
+const hid = (name: string) => ({ name, hidUsage: { keyboardMax: 0, consumerMax: 0 } });
+const layerParam = { name: "Layer", layerId: {} };
+const one = (param1: GetBehaviorDetailsResponse["metadata"][number]["param1"], param2: typeof param1 = []) => [{ param1, param2 }];
+// Sample of what a firmware reports; ids and names are not real. Email and Home Row Mod stand in for behaviors defined in zmk-config.
+const DEMO_BEHAVIORS: GetBehaviorDetailsResponse[] = [
+  { id: 1, displayName: "Key Press", metadata: one([hid("Key")]) },
+  { id: 2, displayName: "Transparent", metadata: [] },
+  { id: 3, displayName: "Momentary Layer", metadata: one([layerParam]) },
+  { id: 4, displayName: "None", metadata: [] },
+  { id: 5, displayName: "Mod-Tap", metadata: one([hid("Hold")], [hid("Tap")]) },
+  { id: 6, displayName: "Layer-Tap", metadata: one([layerParam], [hid("Tap")]) },
+  { id: 7, displayName: "Key Toggle", metadata: one([hid("Key")]) },
+  { id: 8, displayName: "Sticky Key", metadata: one([hid("Key")]) },
+  { id: 9, displayName: "Sticky Layer", metadata: one([layerParam]) },
+  { id: 10, displayName: "Toggle Layer", metadata: one([layerParam]) },
+  { id: 11, displayName: "Caps Word", metadata: [] },
+  { id: 12, displayName: "Key Repeat", metadata: [] },
+  { id: 13, displayName: "Bluetooth", metadata: [
+    { param1: [{ name: "Clear", constant: 0 }, { name: "Next", constant: 1 }, { name: "Prev", constant: 2 }], param2: [] },
+    { param1: [{ name: "Select", constant: 3 }], param2: [{ name: "Profile", range: { min: 0, max: 4 } }] },
+  ] },
+  { id: 14, displayName: "Email", metadata: [] },
+  { id: 15, displayName: "Home Row Mod", metadata: one([hid("Hold")], [hid("Tap")]) },
+];
+const BEHAVIORS: Record<number, string> = Object.fromEntries(DEMO_BEHAVIORS.map(b => [b.id, b.displayName]));
 const usage: Record<string, number> = {
   Esc: 0x29, Tab: 0x2b, Ctrl: 0xe0, Shft: 0xe1, Alt: 0xe2, GUI: 0xe3, Spc: 0x2c, Ent: 0x28, Bspc: 0x2a, Del: 0x4c,
   "-": 0x2d, "[": 0x2f, "]": 0x30, "\\": 0x31, ";": 0x33, "'": 0x34, "`": 0x35, ",": 0x36, ".": 0x37, "/": 0x38,
@@ -84,8 +109,8 @@ export function useDemoStudio(real: Studio): Studio {
   const dirty = () => setUnsaved(n => n + 1);
   return {
     ...real, hasSerial: true, connected: true, device: "Split Heart", loading: false, locked, error: null, lastSync: new Date(),
-    unsaved, removed, firmware: "v0.1.0 · ZMK 0.3", firmwareMacros: ["Email", "Screenshot", "Vim save"],
-    layouts, activeLayout, layout: locked ? undefined : layouts[activeLayout], keymap: locked ? null : map, names: BEHAVIORS,
+    unsaved, removed, firmware: "v0.1.0 · ZMK 0.3",
+    layouts, activeLayout, layout: locked ? undefined : layouts[activeLayout], keymap: locked ? null : map, names: BEHAVIORS, behaviors: DEMO_BEHAVIORS,
     connect: async () => {}, disconnect: () => {}, refresh: () => {},
     setBinding: async (layerId, pos, binding) => { setMap(m => ({ ...m, layers: m.layers.map(l => l.id !== layerId ? l : { ...l, bindings: l.bindings.map((b, i) => i === pos ? binding : b) }) })); dirty(); },
     renameLayer: async (id, name) => { setMap(m => ({ ...m, layers: m.layers.map(l => l.id === id ? { ...l, name } : l) })); dirty(); },

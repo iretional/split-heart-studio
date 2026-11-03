@@ -1,56 +1,67 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import type { KeyPhysicalAttrs, Layer } from "@zmkfirmware/zmk-studio-ts-client/keymap";
+import { useEffect, useState, type KeyboardEvent } from "react";
+import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
+import type { BehaviorBinding, KeyPhysicalAttrs, Layer } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { Icon } from "../components/Icon";
+import { KeycodeDialog, KeycodeGroups } from "../components/KeycodeDialog";
 import { LockBanner, TopBar } from "../components/Shell";
 import { SplitHeartMap } from "../components/SplitHeartMap";
-import { Checkbox, Segmented } from "../components/ui";
-import { ALL_KEYCODES, KEYCODES, WIDE_KEYS, bindingLabel, implicitMods, keyboardUsageLabel, keycodeForUsage, toggleMod, type Keycode } from "../keyLabels";
+import { Checkbox, Segmented, Select } from "../components/ui";
+import { ALL_KEYCODES, bindingLabel, implicitMods, keyboardUsageLabel, keycodeForUsage, toggleMod, withKeptMods } from "../keyLabels";
 import { behaviorId, isTransparent, keyText } from "../studio/bindings";
+import { defaultBinding, paramFields, type ParamField } from "../studio/behaviors";
 import { useIsMobile, type Prefs } from "../studio/prefs";
 import { SPLIT_HEART_KEY_COUNT, isLeftKey, positionName } from "../studio/splitHeartGeometry";
 import type { Studio } from "../studio/useStudio";
 
 export type KeyFocus = { layer: number; key: number };
 
-const CATEGORIES = ["BASIC", "MODIFIERS", "NAVIGATION", "MEDIA", "LAYER", "MOUSE", "MACRO", "CUSTOM"] as const;
-type Category = typeof CATEGORIES[number];
-const MOBILE_CATEGORIES = CATEGORIES.slice(0, 5);
+const MOBILE_TABS = ["KEYBOARD", "MODIFIERS", "KEYPAD", "MEDIA", "LAYER"] as const;
+type MobileTab = typeof MOBILE_TABS[number];
 const MODS = ["Ctrl", "Shift", "Alt", "GUI"];
 
 const bindingSummary = (behavior: string, mods: string[]) => `${behavior} · ${mods.length ? mods.join(" + ") : "no modifiers"}`;
 
 export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; onMenu: () => void; prefs: Prefs; focus: KeyFocus | null }) {
-  const { keymap, layout, names, locked, loading, refresh, setBinding, addLayer, error } = studio;
+  const { keymap, layout, names, behaviors, locked, loading, refresh, setBinding, addLayer, error } = studio;
   const [layerIndex, setLayerIndex] = useState(focus?.layer ?? 0);
   const [selected, setSelected] = useState<number | null>(focus?.key ?? 0);
   const [half, setHalf] = useState<"Left" | "Right">("Left");
-  const [category, setCategory] = useState<Category>("BASIC");
+  const [mobileTab, setMobileTab] = useState<MobileTab>("KEYBOARD");
+  const [picking, setPicking] = useState<1 | 2 | null>(null);
   const mobile = useIsMobile();
   useEffect(() => { if (focus) { setLayerIndex(focus.layer); setSelected(focus.key); } }, [focus]);
   useEffect(() => { if (selected !== null && mobile) setHalf(isLeftKey(selected) ? "Left" : "Right"); }, [selected, mobile]);
   const layer = keymap?.layers[Math.min(layerIndex, keymap.layers.length - 1)];
   const binding = selected === null ? null : layer?.bindings[selected] ?? null;
   const behavior = binding ? names[binding.behaviorId] ?? "Behavior #" + binding.behaviorId : "";
-  const mods = binding ? implicitMods(binding.param1) : [];
+  const details = binding ? behaviors.find(b => b.id === binding.behaviorId) : undefined;
+  const fields = binding && keymap ? paramFields(details, binding, keymap.layers) : [];
+  // The checkboxes edit the last keycode a behavior takes, which is the tap key on a mod-tap.
+  const modField = [...fields].reverse().find(f => f.kind === "hid");
+  const modValue = binding && modField ? (modField.which === 1 ? binding.param1 : binding.param2) : null;
+  const mods = modValue !== null ? implicitMods(modValue) : [];
   const count = layout?.keys.length ?? SPLIT_HEART_KEY_COUNT;
   const isSplitHeart = !layout || layout.keys.length === SPLIT_HEART_KEY_COUNT;
   const keyPress = behaviorId(names, /key ?press/i);
   const momentary = behaviorId(names, /momentary/i);
+  const none = behaviorId(names, /^none/i);
   const canEdit = !locked && !!layer && selected !== null;
+  const write = (next: BehaviorBinding) => { if (canEdit && layer && selected !== null) void setBinding(layer.id, selected, next); };
 
+  const setParam = (which: 1 | 2, value: number) => { if (binding) write({ ...binding, [which === 1 ? "param1" : "param2"]: value }); };
+  const changeBehavior = (id: string) => {
+    const next = behaviors.find(b => String(b.id) === id);
+    if (binding && next && keymap) write(defaultBinding(next, binding, keymap.layers));
+  };
+  /** Firmware rejects keycode 0, so clearing a key means binding it to None. */
+  const clearKey = () => { if (none) write({ behaviorId: Number(none), param1: 0, param2: 0 }); };
   const applyKey = (usage: number) => {
-    if (!canEdit || !keyPress || selected === null || !layer) return;
-    const keepMods = binding && String(binding.behaviorId) === keyPress ? binding.param1 & 0xff000000 : 0;
-    void setBinding(layer.id, selected, { behaviorId: Number(keyPress), param1: (keepMods | usage) >>> 0, param2: 0 });
+    if (!keyPress) return;
+    const keep = binding && String(binding.behaviorId) === keyPress ? binding.param1 : 0;
+    write({ behaviorId: Number(keyPress), param1: withKeptMods(keep, usage), param2: 0 });
   };
-  const applyLayer = (index: number) => {
-    if (!canEdit || !momentary || selected === null || !layer) return;
-    void setBinding(layer.id, selected, { behaviorId: Number(momentary), param1: index, param2: 0 });
-  };
-  const toggleModifier = (name: string) => {
-    if (!canEdit || !binding || selected === null || !layer) return;
-    void setBinding(layer.id, selected, { ...binding, param1: toggleMod(binding.param1, name) });
-  };
+  const applyLayer = (id: number) => { if (momentary) write({ behaviorId: Number(momentary), param1: id, param2: 0 }); };
+  const toggleModifier = (name: string) => { if (modField && modValue !== null) setParam(modField.which, toggleMod(modValue, name)); };
 
   const tabs = <div className="tabs layer-tabs" role="tablist" aria-label="Layers">
     {keymap ? keymap.layers.map((l, i) => <button key={l.id} role="tab" aria-selected={i === layerIndex}
@@ -63,6 +74,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const label = (i: number) => layer ? keyText(i, layer.bindings[i], names, prefs.keyLabels) : positionName(i);
   const state = (i: number) => selected === i ? "selected" as const : layer && isTransparent(layer.bindings[i], names) ? "transparent" as const : "default" as const;
   const step = (d: number) => setSelected(s => ((s ?? 0) + d + count) % count);
+  const pickingValue = binding && picking ? (picking === 1 ? binding.param1 : binding.param2) : 0;
 
   return <>
     <TopBar title="Keymap" subtitle={studio.device} tabs={tabs} studio={studio} onMenu={onMenu} />
@@ -75,8 +87,8 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
           ? <SplitHeartMap half={mobile ? (half === "Left" ? "left" : "right") : undefined} disabled={locked} label={label} state={state} onSelect={setSelected} />
           : layer && layout && <KeyboardSvg keys={layout.keys} layer={layer} names={names} selected={selected} onSelect={setSelected} />}
       </section>
-      <Inspector locked={locked} layer={layer} names={names} selected={selected} count={count} behavior={behavior} mods={mods} onSelect={setSelected} onToggleMod={toggleModifier} onClear={() => applyKey(0)} />
-      <KeycodePicker locked={locked} current={binding?.param1 ?? null} category={category} onCategory={setCategory} layers={keymap?.layers ?? []} onKey={applyKey} onLayer={applyLayer} />
+      <Inspector locked={locked} layer={layer} names={names} selected={selected} count={count} behavior={behavior} behaviors={behaviors} fields={fields} showMods={!!modField} mods={mods}
+        canClear={!!none} onSelect={setSelected} onBehavior={changeBehavior} onParam={setParam} onPick={setPicking} onToggleMod={toggleModifier} onClear={clearKey} />
       <section className="key-sheet mobile-only" aria-label="Selected key">
         <div className="sheet-handle" />
         <div className="sheet-header">
@@ -88,10 +100,16 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
             <button className="btn square" aria-label="Next key" onClick={() => step(1)}><Icon name="chevronRight" /></button>
           </span>
         </div>
-        <div className="tabs category-tabs">{MOBILE_CATEGORIES.map(c => <button key={c} className={"tab t-label" + (c === category ? " active" : "")} onClick={() => setCategory(c)}>{c}</button>)}</div>
-        <div className={"sheet-grid" + (locked ? " locked" : "")}><KeycodeGrid category={category} current={binding?.param1 ?? null} layers={keymap?.layers ?? []} onKey={applyKey} onLayer={applyLayer} /></div>
+        <div className="tabs category-tabs">{MOBILE_TABS.map(c => <button key={c} className={"tab t-label" + (c === mobileTab ? " active" : "")} onClick={() => setMobileTab(c)}>{c}</button>)}</div>
+        <div className={"sheet-grid" + (locked ? " locked" : "")}>
+          {mobileTab === "LAYER"
+            ? <div className="keycode-grid">{(keymap?.layers ?? []).map((l, i) => <button key={l.id} className="keycode t-body" onClick={() => applyLayer(l.id)}>MO {i} · {l.name || "Layer " + i}</button>)}</div>
+            : <KeycodeGroups codes={ALL_KEYCODES.filter(c => c.tab === mobileTab)} current={binding?.param1 ?? null} onPick={applyKey} />}
+        </div>
       </section>
     </div>
+    {picking && binding && selected !== null && layer && <KeycodeDialog target={`Key ${positionName(selected)} · ${layer.name || "Layer " + layerIndex}`} current={pickingValue}
+      onClose={() => setPicking(null)} onPick={u => { setParam(picking, withKeptMods(pickingValue, u)); setPicking(null); }} />}
     {error && <p className="t-caption danger-text page-error">{error.message}</p>}
   </>;
 }
@@ -159,9 +177,11 @@ function KeyboardSvg({ keys, layer, names, selected, onSelect }: {
 
 // --- Inspector -------------------------------------------------------------
 
-function Inspector({ locked, layer, names, selected, count, behavior, mods, onSelect, onToggleMod, onClear }: {
+function Inspector({ locked, layer, names, selected, count, behavior, behaviors, fields, showMods, mods, canClear, onSelect, onBehavior, onParam, onPick, onToggleMod, onClear }: {
   locked: boolean; layer?: Layer; names: Record<number, string>; selected: number | null; count: number;
-  behavior: string; mods: string[]; onSelect: (i: number) => void; onToggleMod: (m: string) => void; onClear: () => void;
+  behavior: string; behaviors: GetBehaviorDetailsResponse[]; fields: ParamField[]; showMods: boolean; mods: string[]; canClear: boolean;
+  onSelect: (i: number) => void; onBehavior: (id: string) => void; onParam: (which: 1 | 2, value: number) => void; onPick: (which: 1 | 2) => void;
+  onToggleMod: (m: string) => void; onClear: () => void;
 }) {
   if (locked) return <aside className="inspector empty">
     <span className="ring"><Icon name="lock" size={20} /></span>
@@ -174,8 +194,9 @@ function Inspector({ locked, layer, names, selected, count, behavior, mods, onSe
     <p className="t-caption muted">Click any key to see its behavior and parameters.</p>
   </aside>;
 
-  const label = bindingLabel(binding.behaviorId, binding.param1, binding.param2, names);
-  const holdTap = behavior.toLowerCase().includes("hold");
+  const value = (which: 1 | 2) => which === 1 ? binding.param1 : binding.param2;
+  const usageText = (v: number) => keycodeForUsage(v)?.label ?? keyboardUsageLabel(v) ?? bindingLabel(binding.behaviorId, v, v, names).title;
+  const behaviorOptions = behaviors.length ? behaviors.map(b => ({ value: String(b.id), label: b.displayName || "Behavior #" + b.id })) : [{ value: String(binding.behaviorId), label: behavior }];
   return <aside className="inspector" aria-label="Key properties">
     <div className="key-header">
       <span className="t-caption muted">KEY</span>
@@ -188,16 +209,16 @@ function Inspector({ locked, layer, names, selected, count, behavior, mods, onSe
       </div>
     </div>
     <div className="field"><span className="t-caption muted">BEHAVIOR</span>
-      <div className="box t-body">{behavior}<Icon name="chevronDown" size={14} /></div></div>
-    <div className="field"><span className="t-caption muted">KEYCODE</span>
-      <div className="box t-body-strong">{keyboardUsageLabel(binding.param1) ?? label.title}
-        <button className="icon-mini" aria-label="Clear keycode" onClick={onClear}><Icon name="close" size={14} /></button></div></div>
-    <div className="field"><span className="t-caption muted">MODIFIERS</span>
-      <div className="mods">{MODS.map(m => <Checkbox key={m} label={m} checked={mods.includes(m)} onChange={() => onToggleMod(m)} />)}</div></div>
-    <div className="hold-row">
-      <span className="t-caption variant">HOLD FOR LAYER</span>
-      <span className={"toggle" + (holdTap ? " on" : "")} role="switch" aria-checked={holdTap} aria-readonly="true"><i /></span>
-    </div>
+      <Select label="Behavior" value={String(binding.behaviorId)} options={behaviorOptions} disabled={!behaviors.length} onChange={onBehavior} /></div>
+    {fields.map(f => <div key={f.which} className="field"><span className="t-caption muted">{f.label}</span>
+      {f.kind === "hid"
+        ? <div className="box box-field t-body-strong">
+            <button className="box-open t-body-strong" aria-haspopup="dialog" onClick={() => onPick(f.which)}>{usageText(value(f.which))}</button>
+            <button className="icon-mini" aria-label="Clear key" disabled={!canClear} onClick={onClear}><Icon name="close" size={14} /></button></div>
+        : <Select label={f.label} value={String(value(f.which))} options={f.options} onChange={v => onParam(f.which, Number(v))} />}
+    </div>)}
+    {showMods && <div className="field"><span className="t-caption muted">MODIFIERS</span>
+      <div className="mods">{MODS.map(m => <Checkbox key={m} label={m} checked={mods.includes(m)} onChange={() => onToggleMod(m)} />)}</div></div>}
     <div className="accordion">
       <details>
         <summary className="t-caption">ADVANCED <Icon name="chevronRight" size={12} /></summary>
@@ -209,49 +230,6 @@ function Inspector({ locked, layer, names, selected, count, behavior, mods, onSe
           <dt className="muted">Param 2</dt><dd className="t-code">0x{binding.param2.toString(16)}</dd>
         </dl>
       </details>
-      {["TAP / HOLD", "MACRO", "VISUAL"].map(t => <div key={t} className="accordion-row t-caption">{t}<Icon name="chevronRight" size={12} /></div>)}
     </div>
   </aside>;
-}
-
-// --- Keycode picker ----------------------------------------------------------
-
-function KeyButton({ code, current, onKey, className }: { code: Keycode; current: number | null; onKey: (u: number) => void; className?: string }) {
-  const on = current !== null && keycodeForUsage(current)?.usage === code.usage;
-  return <button className={"keycode t-body" + (className ? " " + className : "") + (on ? " current" : "")} aria-pressed={on} onClick={() => onKey(code.usage)}>
-    {code.label === "Backspace" && <Icon name="arrowLeft" size={16} />}{code.label === "Tab" && <Icon name="tab" size={16} />}{code.label}
-  </button>;
-}
-
-function KeycodeGrid({ category, current, layers, onKey, onLayer, search = "" }: {
-  category: Category; current: number | null; layers: Layer[]; onKey: (u: number) => void; onLayer: (i: number) => void; search?: string;
-}) {
-  const q = search.trim().toLowerCase();
-  if (q) {
-    const found = ALL_KEYCODES.filter(k => k.label.toLowerCase().includes(q) || k.zmk.toLowerCase().includes(q));
-    return found.length ? <div className="picker-flow">{found.map(k => <KeyButton key={k.usage} code={k} current={current} onKey={onKey} />)}</div>
-      : <p className="t-caption muted">No keycode matches “{search}”.</p>;
-  }
-  if (category === "LAYER") return <div className="picker-flow">{layers.map((l, i) => <button key={l.id} className="keycode t-body" onClick={() => onLayer(i)}>MO {i} · {l.name || "Layer " + i}</button>)}</div>;
-  if (category === "MOUSE" || category === "MACRO") return <p className="t-caption muted">Not editable from here yet. Assign these in your zmk-config.</p>;
-  if (category === "CUSTOM") return <div className="picker-flow">{KEYCODES.SYMBOLS.map(k => <KeyButton key={k.usage} code={k} current={current} onKey={onKey} />)}</div>;
-  const list = KEYCODES[category];
-  return <div className={category === "BASIC" ? "picker-basic" : "picker-flow"}>{list.map(k => <KeyButton key={k.usage} code={k} current={current} onKey={onKey} className={k.label === "Enter" ? "span2" : undefined} />)}</div>;
-}
-
-function KeycodePicker({ current, locked, category, onCategory, layers, onKey, onLayer }: {
-  current: number | null; locked: boolean; category: Category; onCategory: (c: Category) => void; layers: Layer[]; onKey: (u: number) => void; onLayer: (i: number) => void;
-}) {
-  const [search, setSearch] = useState("");
-  const wide = useMemo(() => WIDE_KEYS, []);
-  return <section className={"picker" + (locked ? " locked" : "")} aria-label="Keycodes">
-    <div className="picker-head">
-      <div className="tabs">{CATEGORIES.map(c => <button key={c} disabled={locked} className={"tab t-label" + (c === category ? " active" : "")} onClick={() => onCategory(c)}>{c}</button>)}</div>
-      <label className="search box t-body muted"><Icon name="search" size={14} /><input placeholder="Search keycodes…" disabled={locked} value={search} onChange={e => setSearch(e.target.value)} /></label>
-    </div>
-    <div className="picker-grid">
-      <KeycodeGrid category={category} current={current} layers={layers} onKey={onKey} onLayer={onLayer} search={search} />
-      <div className="picker-wide">{wide.map(k => <KeyButton key={k.usage} code={k} current={current} onKey={onKey} />)}</div>
-    </div>
-  </section>;
 }

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import type { Studio } from "../studio/useStudio";
 import { Icon } from "./Icon";
 
-export const PAGES = ["keymap", "layers", "macros", "combos", "settings"] as const;
+export const PAGES = ["keymap", "layers", "settings"] as const;
 export type Page = typeof PAGES[number];
 
 /** Connection Status component: dot + label on desktop, dot only in the phone top bar. */

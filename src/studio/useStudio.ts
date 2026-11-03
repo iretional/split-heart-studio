@@ -4,13 +4,11 @@ import { connect as serialConnect } from "@zmkfirmware/zmk-studio-ts-client/tran
 import { connect as gattConnect } from "@zmkfirmware/zmk-studio-ts-client/transport/gatt";
 import type { RpcTransport } from "@zmkfirmware/zmk-studio-ts-client/transport/index";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
+import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import { SetLayerBindingResponse, SetLayerPropsResponse, type BehaviorBinding, type Keymap, type Layer, type PhysicalLayout } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 
 export type RemovedLayer = { layer: Layer; index: number };
 export type Transport = "usb" | "bluetooth";
-
-/** Display names ZMK ships with; any other behavior name is treated as a firmware macro. */
-const BUILT_IN = /^(key press|transparent|none|momentary layer|layer.?tap|mod.?tap|toggle layer|to layer|sticky|caps word|key repeat|bootloader|reset|bluetooth|output|rgb|backlight|external power|grave|tap.?dance|mouse|studio unlock|soft off)/i;
 
 type Session = { connection: RpcConnection; transport: RpcTransport; abort: AbortController };
 
@@ -31,6 +29,7 @@ export function useStudio() {
   const [activeLayout, setActiveLayout] = useState(0);
   const [keymap, setKeymap] = useState<Keymap | null>(null);
   const [names, setNames] = useState<Record<number, string>>({});
+  const [behaviors, setBehaviors] = useState<GetBehaviorDetailsResponse[]>([]);
   const [error, setError] = useState<StudioError | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [unsaved, setUnsaved] = useState(0);
@@ -48,7 +47,7 @@ export function useStudio() {
     old?.abort.abort("Disconnected");
     old?.transport.abortController.abort("Disconnected");
     setDevice(""); setLocked(true); setLayouts([]); setKeymap(null);
-    setNames({}); setError(null); setUnsaved(0); setRemoved([]);
+    setNames({}); setBehaviors([]); setError(null); setUnsaved(0); setRemoved([]);
   }, []);
 
   useEffect(() => () => {
@@ -83,13 +82,14 @@ export function useStudio() {
         const response = await call_rpc(conn, { behaviors: { listAllBehaviors: true } });
         const ids = response.behaviors?.listAllBehaviors?.behaviors ?? [];
         const displayNames: Record<number, string> = {};
+        const details: GetBehaviorDetailsResponse[] = [];
         for (const behaviorId of ids) {
           if (session.current?.connection !== conn) return;
           const detail = await call_rpc(conn, { behaviors: { getBehaviorDetails: { behaviorId } } });
           const value = detail.behaviors?.getBehaviorDetails;
-          if (value) displayNames[value.id] = value.displayName || "Behavior #" + value.id;
+          if (value) { displayNames[value.id] = value.displayName || "Behavior #" + value.id; details.push(value); }
         }
-        if (session.current?.connection === conn) setNames(displayNames);
+        if (session.current?.connection === conn) { setNames(displayNames); setBehaviors(details); }
       } catch (err) { console.warn("Behavior metadata unavailable", err); }
     } catch (err) {
       if (session.current?.connection === conn) setError(toError(err));
@@ -213,8 +213,7 @@ export function useStudio() {
   return {
     hasSerial, hasBluetooth, connected, device, loading, locked, error, lastSync, transport, unsaved, removed,
     firmware: "ZMK · Studio RPC",
-    firmwareMacros: Object.values(names).filter(n => !BUILT_IN.test(n)),
-    layouts, activeLayout, layout: layouts[activeLayout] as PhysicalLayout | undefined, keymap, names,
+    layouts, activeLayout, layout: layouts[activeLayout] as PhysicalLayout | undefined, keymap, names, behaviors,
     connect, disconnect, refresh: () => void refresh(),
     setBinding, renameLayer, moveLayer, addLayer, removeLayer, restoreLayer, saveChanges, discardChanges,
     setActiveLayoutIndex, lock, resetSettings,

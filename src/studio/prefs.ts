@@ -11,7 +11,7 @@ export function saveJson(key: string, value: unknown) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* private mode: keep working in memory */ }
 }
 
-/** State mirrored into localStorage; macros, combos and preferences live only in this browser. */
+/** State mirrored into localStorage; preferences live only in this browser. */
 export function useStored<T>(key: string, fallback: () => T): [T, (v: T | ((old: T) => T)) => void] {
   const [value, setValue] = useState<T>(() => loadJson(key, fallback()));
   useEffect(() => saveJson(key, value), [key, value]);

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Icon } from "./Icon";
 
 export function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
@@ -35,14 +35,6 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
 export const DragHandle = () => <svg className="drag" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
   {[3, 8, 13].flatMap(y => [6, 10].map(x => <rect key={x + "-" + y} x={x - 1} y={y - 1} width="2" height="2" rx="1" />))}
 </svg>;
-
-export function CopyButton({ text, label, primary }: { text: string; label: string; primary?: boolean }) {
-  const [done, setDone] = useState(false);
-  return <button className={"btn" + (primary ? " btn-primary" : "")} onClick={() => {
-    void navigator.clipboard?.writeText(text);
-    setDone(true); setTimeout(() => setDone(false), 1500);
-  }}>{done ? "Copied" : label}</button>;
-}
 
 export function Notice({ title, children, danger }: { title?: string; children: ReactNode; danger?: boolean }) {
   return <div className={"notice" + (danger ? " danger" : "")}>
