@@ -36,7 +36,7 @@ export default function App() {
 
   return <div className="app">
     <Sidebar page={page} onNavigate={navigate} navEnabled={studio.connected}
-      device={studio.device} connected={studio.connected} lastSync={studio.lastSync} firmware={studio.firmware}
+      device={studio.device} connected={studio.connected} lastSync={studio.lastSync}
       open={menuOpen} onClose={() => setMenuOpen(false)} />
     <main className="main">
       {!studio.connected ? <ConnectPage studio={studio} onMenu={onMenu} />

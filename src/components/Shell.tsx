@@ -16,7 +16,7 @@ export function ConnectionStatus({ connected, variant }: { connected: boolean; v
 
 type SidebarProps = {
   page: Page; onNavigate: (page: Page) => void; navEnabled: boolean;
-  device: string; connected: boolean; lastSync: Date | null; firmware: string;
+  device: string; connected: boolean; lastSync: Date | null;
   open: boolean; onClose: () => void;
 };
 
@@ -25,7 +25,7 @@ export const syncText = (d: Date | null) => d
     + `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
   : "—";
 
-export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastSync, firmware, open, onClose }: SidebarProps) {
+export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastSync, open, onClose }: SidebarProps) {
   return <>
     {open && <div className="scrim drawer-scrim" onClick={onClose} />}
     <aside className={"sidebar" + (open ? " open" : "")}>
@@ -44,8 +44,7 @@ export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastS
         <ConnectionStatus connected={connected} variant="desktop" />
       </div>
       <div className="meta">
-        <div><span className="t-caption muted">FIRMWARE</span><span className="t-caption muted">{connected ? firmware : "—"}</span></div>
-        <div><span className="t-caption muted">LAST SYNC</span><span className="t-caption muted">{syncText(lastSync)}</span></div>
+        <span className="t-caption muted">LAST SYNC</span><span className="t-caption muted">{syncText(lastSync)}</span>
       </div>
     </aside>
   </>;
@@ -93,10 +92,8 @@ export function TopBar({ title, subtitle, tabs, studio, onMenu, onBack, mobileAc
       </button>
       {mobileAction && <span className="mobile-only">{mobileAction}</span>}
       {connected && showSave && <div className="save-slot"><SaveStatus studio={studio} /></div>}
-      <span className="divider desktop-only" />
       <div className="keyboard-select desktop-only"><span className="t-label">{(device || "Split Heart").toUpperCase()}</span><Icon name="chevronDown" size={14} /></div>
-      <span className="divider desktop-only" />
-      <span className="menu-anchor more-slot">
+      <span className="menu-anchor more-slot mobile-only">
         <button className="icon-btn" aria-label="More" aria-expanded={menu} onClick={() => setMenu(m => !m)}><Icon name="more" size={18} /></button>
         {menu && <div className="popover card" role="menu" onClick={() => setMenu(false)}>
           <button role="menuitem" className="t-body" onClick={refresh} disabled={loading || !connected}>Refresh from keyboard</button>

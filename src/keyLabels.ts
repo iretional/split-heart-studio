@@ -14,9 +14,22 @@ const special: Record<number, string> = {
 export type Keycode = { label: string; usage: number; zmk: string; aliases: string[]; tab: string; group: string };
 const page7 = (id: number) => 0x70000 | id;
 
-/** Every ZMK keycode. The label is the name written in a keymap. */
+const digits = (prefix: string) => Object.fromEntries("0123456789".split("").map(d => [prefix + d, d]));
+/** What a person reads on a key. The ZMK name stays searchable and appears in the tooltip. */
+const GLYPHS: Record<string, string> = {
+  EXCL: "!", AT: "@", HASH: "#", DLLR: "$", PRCNT: "%", CARET: "^", AMPS: "&", STAR: "*", LPAR: "(", RPAR: ")",
+  MINUS: "-", UNDER: "_", EQUAL: "=", PLUS: "+", LBKT: "[", LBRC: "{", RBKT: "]", RBRC: "}", BSLH: "\\", PIPE: "|",
+  SEMI: ";", COLON: ":", SQT: "'", DQT: '"', GRAVE: "`", TILDE: "~", COMMA: ",", LT: "<", DOT: ".", GT: ">", FSLH: "/", QMARK: "?",
+  KP_SLASH: "/", KP_MULTIPLY: "*", KP_MINUS: "-", KP_PLUS: "+", KP_DOT: ".", KP_EQUAL: "=", KP_COMMA: ",", KP_LPAR: "(", KP_RPAR: ")",
+  ...digits("N"), ...digits("KP_N"),
+};
+
+/** Every ZMK keycode. `zmk` is the name written in a keymap, `label` is what the button shows. */
 export const ALL_KEYCODES: Keycode[] = ZMK_KEYCODE_ROWS.map(([tab, group, zmk, usage, aliases]) =>
-  ({ label: zmk, usage, zmk, aliases: aliases ? aliases.split(" ") : [], tab, group }));
+  ({ label: GLYPHS[zmk] ?? zmk, usage, zmk, aliases: aliases ? aliases.split(" ") : [], tab, group }));
+
+/** Label outside the Keypad tab, where 1 and KP_N1 would otherwise read the same. */
+export const keycodeText = (c: Keycode) => c.tab === "KEYPAD" && c.label !== c.zmk ? "KP " + c.label : c.label;
 export const KEYCODE_TABS = [...new Set(ALL_KEYCODES.map(c => c.tab))];
 
 export function keycodeForUsage(code: number): Keycode | undefined {
@@ -30,7 +43,9 @@ export function keyboardUsageLabel(code: number): string | null {
   if (media) return media.label;
   // Keycode is usually a 32-bit HID usage (page 0x07, ID in low 16 bits).
   const page = (code >>> 16) & 0xffff;
-  if (page !== 0 && (page & 0xff) !== 0x07) return null;
+  const listed = keycodeForUsage(code);
+  const listedText = listed ? keycodeText(listed) : null;
+  if (page !== 0 && (page & 0xff) !== 0x07) return listedText;
   const usage = code & 0xffff;
   if (usage >= 0x04 && usage <= 0x1d)
     return String.fromCharCode(65 + usage - 0x04);
@@ -38,7 +53,7 @@ export function keyboardUsageLabel(code: number): string | null {
     return "1234567890"[usage - 0x1e];
   if (usage >= 0x3a && usage <= 0x45)
     return "F" + (usage - 0x3a + 1);
-  return special[usage] ?? null;
+  return special[usage] ?? listedText;
 }
 
 // ZMK stores implicit modifiers in the top byte of a key press usage (APPLY_MODS).

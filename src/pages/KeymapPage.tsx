@@ -1,12 +1,12 @@
-import { useEffect, useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import type { BehaviorBinding, KeyPhysicalAttrs, Layer } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { Icon } from "../components/Icon";
-import { KeycodeDialog, KeycodeGroups } from "../components/KeycodeDialog";
+import { KeycodeDialog } from "../components/KeycodeDialog";
 import { LockBanner, TopBar } from "../components/Shell";
 import { SplitHeartMap } from "../components/SplitHeartMap";
 import { Checkbox, Segmented, Select } from "../components/ui";
-import { ALL_KEYCODES, bindingLabel, implicitMods, keyboardUsageLabel, keycodeForUsage, toggleMod, withKeptMods } from "../keyLabels";
+import { bindingLabel, implicitMods, keyboardUsageLabel, keycodeForUsage, keycodeText, toggleMod, withKeptMods } from "../keyLabels";
 import { behaviorId, isTransparent, keyText } from "../studio/bindings";
 import { defaultBinding, paramFields, type ParamField } from "../studio/behaviors";
 import { useIsMobile, type Prefs } from "../studio/prefs";
@@ -15,8 +15,6 @@ import type { Studio } from "../studio/useStudio";
 
 export type KeyFocus = { layer: number; key: number };
 
-const MOBILE_TABS = ["KEYBOARD", "MODIFIERS", "KEYPAD", "MEDIA", "LAYER"] as const;
-type MobileTab = typeof MOBILE_TABS[number];
 const MODS = ["Ctrl", "Shift", "Alt", "GUI"];
 
 const bindingSummary = (behavior: string, mods: string[]) => `${behavior} · ${mods.length ? mods.join(" + ") : "no modifiers"}`;
@@ -26,7 +24,6 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const [layerIndex, setLayerIndex] = useState(focus?.layer ?? 0);
   const [selected, setSelected] = useState<number | null>(focus?.key ?? 0);
   const [half, setHalf] = useState<"Left" | "Right">("Left");
-  const [mobileTab, setMobileTab] = useState<MobileTab>("KEYBOARD");
   const [picking, setPicking] = useState<1 | 2 | null>(null);
   const mobile = useIsMobile();
   useEffect(() => { if (focus) { setLayerIndex(focus.layer); setSelected(focus.key); } }, [focus]);
@@ -42,8 +39,6 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const mods = modValue !== null ? implicitMods(modValue) : [];
   const count = layout?.keys.length ?? SPLIT_HEART_KEY_COUNT;
   const isSplitHeart = !layout || layout.keys.length === SPLIT_HEART_KEY_COUNT;
-  const keyPress = behaviorId(names, /key ?press/i);
-  const momentary = behaviorId(names, /momentary/i);
   const none = behaviorId(names, /^none/i);
   const canEdit = !locked && !!layer && selected !== null;
   const write = (next: BehaviorBinding) => { if (canEdit && layer && selected !== null) void setBinding(layer.id, selected, next); };
@@ -55,12 +50,6 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   };
   /** Firmware rejects keycode 0, so clearing a key means binding it to None. */
   const clearKey = () => { if (none) write({ behaviorId: Number(none), param1: 0, param2: 0 }); };
-  const applyKey = (usage: number) => {
-    if (!keyPress) return;
-    const keep = binding && String(binding.behaviorId) === keyPress ? binding.param1 : 0;
-    write({ behaviorId: Number(keyPress), param1: withKeptMods(keep, usage), param2: 0 });
-  };
-  const applyLayer = (id: number) => { if (momentary) write({ behaviorId: Number(momentary), param1: id, param2: 0 }); };
   const toggleModifier = (name: string) => { if (modField && modValue !== null) setParam(modField.which, toggleMod(modValue, name)); };
 
   const tabs = <div className="tabs layer-tabs" role="tablist" aria-label="Layers">
@@ -75,6 +64,8 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const state = (i: number) => selected === i ? "selected" as const : layer && isTransparent(layer.bindings[i], names) ? "transparent" as const : "default" as const;
   const step = (d: number) => setSelected(s => ((s ?? 0) + d + count) % count);
   const pickingValue = binding && picking ? (picking === 1 ? binding.param1 : binding.param2) : 0;
+  const keyFields = binding && <KeyFields binding={binding} names={names} behavior={behavior} behaviors={behaviors} fields={fields} showMods={!!modField} mods={mods} canClear={!!none}
+    onBehavior={changeBehavior} onParam={setParam} onPick={setPicking} onToggleMod={toggleModifier} onClear={clearKey} />;
 
   return <>
     <TopBar title="Keymap" subtitle={studio.device} tabs={tabs} studio={studio} onMenu={onMenu} />
@@ -87,8 +78,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
           ? <SplitHeartMap half={mobile ? (half === "Left" ? "left" : "right") : undefined} disabled={locked} label={label} state={state} onSelect={setSelected} />
           : layer && layout && <KeyboardSvg keys={layout.keys} layer={layer} names={names} selected={selected} onSelect={setSelected} />}
       </section>
-      <Inspector locked={locked} layer={layer} names={names} selected={selected} count={count} behavior={behavior} behaviors={behaviors} fields={fields} showMods={!!modField} mods={mods}
-        canClear={!!none} onSelect={setSelected} onBehavior={changeBehavior} onParam={setParam} onPick={setPicking} onToggleMod={toggleModifier} onClear={clearKey} />
+      <Inspector locked={locked} layer={layer} selected={selected} count={count} onSelect={setSelected}>{keyFields}</Inspector>
       <section className="key-sheet mobile-only" aria-label="Selected key">
         <div className="sheet-handle" />
         <div className="sheet-header">
@@ -100,12 +90,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
             <button className="btn square" aria-label="Next key" onClick={() => step(1)}><Icon name="chevronRight" /></button>
           </span>
         </div>
-        <div className="tabs category-tabs">{MOBILE_TABS.map(c => <button key={c} className={"tab t-label" + (c === mobileTab ? " active" : "")} onClick={() => setMobileTab(c)}>{c}</button>)}</div>
-        <div className={"sheet-grid" + (locked ? " locked" : "")}>
-          {mobileTab === "LAYER"
-            ? <div className="keycode-grid">{(keymap?.layers ?? []).map((l, i) => <button key={l.id} className="keycode t-body" onClick={() => applyLayer(l.id)}>MO {i} · {l.name || "Layer " + i}</button>)}</div>
-            : <KeycodeGroups codes={ALL_KEYCODES.filter(c => c.tab === mobileTab)} current={binding?.param1 ?? null} onPick={applyKey} />}
-        </div>
+        {!locked && keyFields && <div className={"sheet-fields" + (fields.length === 1 ? " paired" : "")}>{keyFields}</div>}
       </section>
     </div>
     {picking && binding && selected !== null && layer && <KeycodeDialog target={`Key ${positionName(selected)} · ${layer.name || "Layer " + layerIndex}`} current={pickingValue}
@@ -177,11 +162,32 @@ function KeyboardSvg({ keys, layer, names, selected, onSelect }: {
 
 // --- Inspector -------------------------------------------------------------
 
-function Inspector({ locked, layer, names, selected, count, behavior, behaviors, fields, showMods, mods, canClear, onSelect, onBehavior, onParam, onPick, onToggleMod, onClear }: {
-  locked: boolean; layer?: Layer; names: Record<number, string>; selected: number | null; count: number;
-  behavior: string; behaviors: GetBehaviorDetailsResponse[]; fields: ParamField[]; showMods: boolean; mods: string[]; canClear: boolean;
-  onSelect: (i: number) => void; onBehavior: (id: string) => void; onParam: (which: 1 | 2, value: number) => void; onPick: (which: 1 | 2) => void;
+/** Behavior, its value fields and modifiers. The Inspector and the phone Key Sheet show the same controls. */
+function KeyFields({ binding, names, behavior, behaviors, fields, showMods, mods, canClear, onBehavior, onParam, onPick, onToggleMod, onClear }: {
+  binding: BehaviorBinding; names: Record<number, string>; behavior: string; behaviors: GetBehaviorDetailsResponse[]; fields: ParamField[]; showMods: boolean; mods: string[]; canClear: boolean;
+  onBehavior: (id: string) => void; onParam: (which: 1 | 2, value: number) => void; onPick: (which: 1 | 2) => void;
   onToggleMod: (m: string) => void; onClear: () => void;
+}) {
+  const value = (which: 1 | 2) => which === 1 ? binding.param1 : binding.param2;
+  const usageText = (v: number) => { const c = keycodeForUsage(v); return c ? keycodeText(c) : keyboardUsageLabel(v) ?? bindingLabel(binding.behaviorId, v, v, names).title; };
+  const behaviorOptions = behaviors.length ? behaviors.map(b => ({ value: String(b.id), label: b.displayName || "Behavior #" + b.id })) : [{ value: String(binding.behaviorId), label: behavior }];
+  return <>
+    <div className="field field-behavior"><span className="t-caption muted">BEHAVIOR</span>
+      <Select label="Behavior" value={String(binding.behaviorId)} options={behaviorOptions} disabled={!behaviors.length} onChange={onBehavior} /></div>
+    {fields.map(f => <div key={f.which} className="field"><span className="t-caption muted">{f.label}</span>
+      {f.kind === "hid"
+        ? <div className="box box-field t-body-strong">
+            <button className="box-open t-body-strong" aria-haspopup="dialog" title={keycodeForUsage(value(f.which))?.zmk} onClick={() => onPick(f.which)}>{usageText(value(f.which))}</button>
+            <button className="icon-mini" aria-label="Clear key" disabled={!canClear} onClick={onClear}><Icon name="close" size={14} /></button></div>
+        : <Select label={f.label} value={String(value(f.which))} options={f.options} onChange={v => onParam(f.which, Number(v))} />}
+    </div>)}
+    {showMods && <div className="field field-mods"><span className="t-caption muted">MODIFIERS</span>
+      <div className="mods">{MODS.map(m => <Checkbox key={m} label={m} checked={mods.includes(m)} onChange={() => onToggleMod(m)} />)}</div></div>}
+  </>;
+}
+
+function Inspector({ locked, layer, selected, count, onSelect, children }: {
+  locked: boolean; layer?: Layer; selected: number | null; count: number; onSelect: (i: number) => void; children: ReactNode;
 }) {
   if (locked) return <aside className="inspector empty">
     <span className="ring"><Icon name="lock" size={20} /></span>
@@ -194,9 +200,6 @@ function Inspector({ locked, layer, names, selected, count, behavior, behaviors,
     <p className="t-caption muted">Click any key to see its behavior and parameters.</p>
   </aside>;
 
-  const value = (which: 1 | 2) => which === 1 ? binding.param1 : binding.param2;
-  const usageText = (v: number) => keycodeForUsage(v)?.label ?? keyboardUsageLabel(v) ?? bindingLabel(binding.behaviorId, v, v, names).title;
-  const behaviorOptions = behaviors.length ? behaviors.map(b => ({ value: String(b.id), label: b.displayName || "Behavior #" + b.id })) : [{ value: String(binding.behaviorId), label: behavior }];
   return <aside className="inspector" aria-label="Key properties">
     <div className="key-header">
       <span className="t-caption muted">KEY</span>
@@ -208,17 +211,7 @@ function Inspector({ locked, layer, names, selected, count, behavior, behaviors,
         </span>
       </div>
     </div>
-    <div className="field"><span className="t-caption muted">BEHAVIOR</span>
-      <Select label="Behavior" value={String(binding.behaviorId)} options={behaviorOptions} disabled={!behaviors.length} onChange={onBehavior} /></div>
-    {fields.map(f => <div key={f.which} className="field"><span className="t-caption muted">{f.label}</span>
-      {f.kind === "hid"
-        ? <div className="box box-field t-body-strong">
-            <button className="box-open t-body-strong" aria-haspopup="dialog" onClick={() => onPick(f.which)}>{usageText(value(f.which))}</button>
-            <button className="icon-mini" aria-label="Clear key" disabled={!canClear} onClick={onClear}><Icon name="close" size={14} /></button></div>
-        : <Select label={f.label} value={String(value(f.which))} options={f.options} onChange={v => onParam(f.which, Number(v))} />}
-    </div>)}
-    {showMods && <div className="field"><span className="t-caption muted">MODIFIERS</span>
-      <div className="mods">{MODS.map(m => <Checkbox key={m} label={m} checked={mods.includes(m)} onChange={() => onToggleMod(m)} />)}</div></div>}
+    {children}
     <div className="accordion">
       <details>
         <summary className="t-caption">ADVANCED <Icon name="chevronRight" size={12} /></summary>
