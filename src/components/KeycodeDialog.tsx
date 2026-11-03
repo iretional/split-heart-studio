@@ -11,8 +11,8 @@ function KeycodeGroups({ codes, current, onPick }: { codes: Keycode[]; current: 
     {groups.map(g => <div key={g} className="keycode-group">
       <span className="t-caption muted">{g}</span>
       <div className="keycode-grid">
-        {codes.filter(c => c.group === g).map(c => <button key={c.usage} title={[c.zmk, ...c.aliases].join(", ")} aria-label={c.zmk} aria-pressed={c.usage === selected}
-          className={"keycode t-body" + (c.usage === selected ? " selected" : "")} onClick={() => onPick(c.usage)}>{c.label}</button>)}
+        {codes.filter(c => c.group === g).map(c => <button key={c.usage} title={c.description || c.zmk} aria-label={c.zmk} aria-pressed={c.usage === selected}
+          className={"keycode" + (c.usage === selected ? " selected" : "")} onClick={() => onPick(c.usage)}><span className="t-body">{c.label}</span><span className="keycode-name t-caption">{c.zmk}</span></button>)}
       </div>
     </div>)}
   </div>;

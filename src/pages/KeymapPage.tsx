@@ -177,7 +177,7 @@ function KeyFields({ binding, names, behavior, behaviors, fields, showMods, mods
     {fields.map(f => <div key={f.which} className="field"><span className="t-caption muted">{f.label}</span>
       {f.kind === "hid"
         ? <div className="box box-field t-body-strong">
-            <button className="box-open t-body-strong" aria-haspopup="dialog" title={keycodeForUsage(value(f.which))?.zmk} onClick={() => onPick(f.which)}>{usageText(value(f.which))}</button>
+            <button className="box-open t-body-strong" aria-haspopup="dialog" title={keycodeForUsage(value(f.which))?.description} onClick={() => onPick(f.which)}>{usageText(value(f.which))}</button>
             <button className="icon-mini" aria-label="Clear key" disabled={!canClear} onClick={onClear}><Icon name="close" size={14} /></button></div>
         : <Select label={f.label} value={String(value(f.which))} options={f.options} onChange={v => onParam(f.which, Number(v))} />}
     </div>)}

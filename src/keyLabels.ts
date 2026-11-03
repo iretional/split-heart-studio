@@ -11,7 +11,7 @@ const special: Record<number, string> = {
   0xe4: "RCtrl", 0xe5: "RShift", 0xe6: "RAlt", 0xe7: "RGUI",
 };
 
-export type Keycode = { label: string; usage: number; zmk: string; aliases: string[]; tab: string; group: string };
+export type Keycode = { label: string; usage: number; zmk: string; aliases: string[]; tab: string; group: string; description: string };
 const page7 = (id: number) => 0x70000 | id;
 
 const digits = (prefix: string) => Object.fromEntries("0123456789".split("").map(d => [prefix + d, d]));
@@ -25,8 +25,8 @@ const GLYPHS: Record<string, string> = {
 };
 
 /** Every ZMK keycode. `zmk` is the name written in a keymap, `label` is what the button shows. */
-export const ALL_KEYCODES: Keycode[] = ZMK_KEYCODE_ROWS.map(([tab, group, zmk, usage, aliases]) =>
-  ({ label: GLYPHS[zmk] ?? zmk, usage, zmk, aliases: aliases ? aliases.split(" ") : [], tab, group }));
+export const ALL_KEYCODES: Keycode[] = ZMK_KEYCODE_ROWS.map(([tab, group, zmk, usage, aliases, description]) =>
+  ({ label: GLYPHS[zmk] ?? zmk, usage, zmk, aliases: aliases ? aliases.split(" ") : [], tab, group, description }));
 
 /** Label outside the Keypad tab, where 1 and KP_N1 would otherwise read the same. */
 export const keycodeText = (c: Keycode) => c.tab === "KEYPAD" && c.label !== c.zmk ? "KP " + c.label : c.label;
