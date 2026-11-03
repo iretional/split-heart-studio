@@ -574,3 +574,11 @@ a.btn { text-decoration: none; color: inherit; }
 }
 .macro-step .topbar-spacer, .combo-top .topbar-spacer, .dialog-buttons .topbar-spacer, .activator .topbar-spacer { display: block; flex: 1; }
 .chip-select select { field-sizing: content; }
+
+/* Page bodies stop at the Figma content max width and center in Main; Top Bar and Lock Banner stay full width. */
+:root { --content-max-width: 1280px; }
+.keymap-body, .layers-body, .macros-body, .combos-body, .settings-body, .connect-body {
+  width: 100%; max-width: var(--content-max-width); margin-inline: auto;
+}
+.add-step { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.add-step .btn { padding: 0 var(--space-2); }
