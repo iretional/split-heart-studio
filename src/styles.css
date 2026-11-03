@@ -93,7 +93,7 @@ h1, h2, p { margin: 0; }
 .nav { display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-48); }
 .nav.disabled { opacity: .4; pointer-events: none; }
 .nav-item {
-  height: 40px; display: flex; align-items: center; gap: var(--space-18); padding: 0 var(--space-16) 0 var(--space-20); border: 0; border-radius: 2px;
+  height: 40px; display: flex; align-items: center; gap: var(--space-18); padding: 0 var(--space-16) 0 var(--space-12); border: 0; border-radius: 2px;
   background: transparent; color: var(--onsurface-variant); text-align: left;
 }
 .nav-item svg { flex: none; }
