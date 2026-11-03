@@ -8,6 +8,8 @@ export type Page = typeof PAGES[number];
 const PAGE_ICONS: Record<Page, IconName> = { keymap: "caseSensitive", layers: "layers", settings: "settings", motion: "play" };
 /** These pages work without a keyboard connected. */
 const OFFLINE_PAGES: readonly Page[] = ["motion"];
+/** Opened by typing the address. The nav lists them only while they are open. */
+const UNLISTED_PAGES: readonly Page[] = ["motion"];
 
 /** Connection Status component: dot + label on desktop, dot only in the phone top bar. */
 export function ConnectionStatus({ connected, variant }: { connected: boolean; variant: "desktop" | "mobile" }) {
@@ -39,7 +41,7 @@ export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastS
         <button className="icon-btn drawer-close" onClick={onClose} aria-label="Close menu"><Icon name="close" size={20} /></button>
       </div>
       <nav className="nav" aria-label="Pages">
-        {PAGES.map(p => {
+        {PAGES.filter(p => !UNLISTED_PAGES.includes(p) || page === p).map(p => {
           const face = <><Icon name={PAGE_ICONS[p]} size={20} />{p.toUpperCase()}</>;
           const selecting = page === p && fx.selecting === p;
           return <button key={p} className={"nav-item t-label" + (page === p ? " active" : "") + (navEnabled || OFFLINE_PAGES.includes(p) ? "" : " disabled")
