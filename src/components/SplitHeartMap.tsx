@@ -54,8 +54,8 @@ export function SplitHeartMap({ label, icon, code, hint, state, onSelect, compac
       {!compact && <text className="badge-label" x={b.cx} y={b.cy} textAnchor="middle" dominantBaseline="central">{b.text}</text>}
     </g>)}
     {!compact && !half && HALF_LABELS.map(l => <g key={l.text}>
-      <line className="half-dash" x1={l.x} x2={l.x + 10} y1={l.y} y2={l.y} />
-      <text className="half-label" x={l.x + 20} y={l.y} dominantBaseline="central">{l.text}</text>
+      <line className="half-dash" x1={l.dashX} x2={l.dashX + 10} y1={l.y} y2={l.y} />
+      <text className="half-label" x={l.textX} y={l.y} textAnchor={l.anchor} dominantBaseline="central">{l.text}</text>
     </g>)}
     {Array.from({ length: SPLIT_HEART_KEY_COUNT }, (_, i) => {
       if (half && isLeftKey(i) !== (half === "left")) return null;

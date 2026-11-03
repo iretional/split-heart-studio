@@ -56,4 +56,8 @@ export const OUTLINES = [
 ];
 export const OUTLINE_DOTS: [number, number][] = [[411.9, 308.3], [246.8, 398.6], [285.5, 411.5], [415.4, 339.2], [567.6, 308.3], [732.7, 398.6], [694, 411.5], [564.2, 339.2]];
 export const HALF_BADGES: { cx: number; cy: number; text: string }[] = [{ cx: 267.5, cy: 450.2, text: "L" }, { cx: 712.1, cy: 450.2, text: "R" }];
-export const HALF_LABELS: { x: number; y: number; text: string }[] = [{ x: 53, y: 75.5, text: "LEFT · CENTRAL" }, { x: 559, y: 75.5, text: "RIGHT · PERIPHERAL" }];
+/** Each label meets the inner edge of its case: the dash faces the centre and the text extends outward. */
+export const HALF_LABELS: { dashX: number; textX: number; anchor: "start" | "end"; y: number; text: string }[] = [
+  { dashX: 401.5, textX: 391.5, anchor: "end", y: 75.5, text: "LEFT · CENTRAL" },
+  { dashX: 567.5, textX: 587.5, anchor: "start", y: 75.5, text: "RIGHT · PERIPHERAL" },
+];
