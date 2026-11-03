@@ -1,4 +1,4 @@
-# Split Heart Studio
+# Split Studio
 
 An independent, browser-based keymap viewer for the 60-key **Split Heart** ZMK keyboard. It uses the official ZMK Studio RPC TypeScript client, not a custom firmware protocol.
 

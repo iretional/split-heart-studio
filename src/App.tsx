@@ -109,7 +109,7 @@ export default function App() {
 
   return <div className="app">
     <header className="header">
-      <div className="brand"><span className="emblem">◇</span><div><strong>SPLIT HEART</strong><small>STUDIO  /  0.1 ALPHA</small></div></div>
+      <div className="brand"><span className="emblem">◇</span><div><strong>SPLIT STUDIO</strong><small>0.1 ALPHA</small></div></div>
       <div className="header-actions"><span className={"indicator" + (connected ? " online" : "")}>● {connected ? device : "DISCONNECTED"}</span>
         {connected
           ? <button onClick={disconnect} className="btn secondary">연결 해제</button>
@@ -201,7 +201,7 @@ export default function App() {
             <p>읽기 전용 MVP입니다. 실시간 편집 및 저장 기능은 연결 검증 후 추가합니다.</p>
           </div>
           : <div className="nothing"><span>＋</span><p>키 하나를 선택하면 동작과 매개변수를 확인할 수 있습니다.</p></div>}
-        <div className="inspector-bottom">SPLIT HEART / PERSONAL CONFIGURATOR</div>
+        <div className="inspector-bottom">SPLIT STUDIO / PERSONAL CONFIGURATOR</div>
       </aside>
     </main>
   </div>;
