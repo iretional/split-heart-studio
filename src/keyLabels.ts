@@ -1,3 +1,4 @@
+import { KEYCODE_NAMES } from "./keycodeNames";
 import { ZMK_KEYCODE_ROWS } from "./zmkKeycodes";
 
 // USB HID keyboard usage names. RPC may also return non-keyboard usages.
@@ -14,22 +15,12 @@ const special: Record<number, string> = {
 export type Keycode = { label: string; usage: number; zmk: string; aliases: string[]; tab: string; group: string; description: string };
 const page7 = (id: number) => 0x70000 | id;
 
-const digits = (prefix: string) => Object.fromEntries("0123456789".split("").map(d => [prefix + d, d]));
-/** What a person reads on a key. The ZMK name stays searchable and appears in the tooltip. */
-const GLYPHS: Record<string, string> = {
-  EXCL: "!", AT: "@", HASH: "#", DLLR: "$", PRCNT: "%", CARET: "^", AMPS: "&", STAR: "*", LPAR: "(", RPAR: ")",
-  MINUS: "-", UNDER: "_", EQUAL: "=", PLUS: "+", LBKT: "[", LBRC: "{", RBKT: "]", RBRC: "}", BSLH: "\\", PIPE: "|",
-  SEMI: ";", COLON: ":", SQT: "'", DQT: '"', GRAVE: "`", TILDE: "~", COMMA: ",", LT: "<", DOT: ".", GT: ">", FSLH: "/", QMARK: "?",
-  KP_SLASH: "/", KP_MULTIPLY: "*", KP_MINUS: "-", KP_PLUS: "+", KP_DOT: ".", KP_EQUAL: "=", KP_COMMA: ",", KP_LPAR: "(", KP_RPAR: ")",
-  ...digits("N"), ...digits("KP_N"),
-};
-
 /** Every ZMK keycode. `zmk` is the name written in a keymap, `label` is what the button shows. */
 export const ALL_KEYCODES: Keycode[] = ZMK_KEYCODE_ROWS.map(([tab, group, zmk, usage, aliases, description]) =>
-  ({ label: GLYPHS[zmk] ?? zmk, usage, zmk, aliases: aliases ? aliases.split(" ") : [], tab, group, description }));
+  ({ label: KEYCODE_NAMES[zmk] ?? zmk, usage, zmk, aliases: aliases ? aliases.split(" ") : [], tab, group, description }));
 
 /** Label outside the Keypad tab, where 1 and KP_N1 would otherwise read the same. */
-export const keycodeText = (c: Keycode) => c.tab === "KEYPAD" && c.label !== c.zmk ? "KP " + c.label : c.label;
+export const keycodeText = (c: Keycode) => c.tab === "KEYPAD" ? "Keypad " + c.label : c.label;
 export const KEYCODE_TABS = [...new Set(ALL_KEYCODES.map(c => c.tab))];
 
 export function keycodeForUsage(code: number): Keycode | undefined {

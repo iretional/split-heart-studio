@@ -17,6 +17,7 @@ export type KeyFocus = { layer: number; key: number };
 
 const MODS = ["Ctrl", "Shift", "Alt", "GUI"];
 
+const keycodeNameOf = (v: number) => { const c = keycodeForUsage(v); return c ? keycodeText(c) : keyboardUsageLabel(v) ?? "—"; };
 const bindingSummary = (behavior: string, mods: string[]) => `${behavior} · ${mods.length ? mods.join(" + ") : "no modifiers"}`;
 
 export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; onMenu: () => void; prefs: Prefs; focus: KeyFocus | null }) {
@@ -83,7 +84,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
         <div className="sheet-handle" />
         <div className="sheet-header">
           <span className="key-badge t-body-strong">{selected === null ? "—" : positionName(selected)}</span>
-          <span className="sheet-binding"><span className="t-body-strong">{locked ? "Locked" : binding ? keyboardUsageLabel(binding.param1) ?? bindingLabel(binding.behaviorId, binding.param1, binding.param2, names).title : "No key"}</span>
+          <span className="sheet-binding"><span className="t-body-strong">{locked ? "Locked" : binding ? modValue !== null ? keycodeNameOf(modValue) : bindingLabel(binding.behaviorId, binding.param1, binding.param2, names).title : "No key"}</span>
             <span className="t-caption muted">{locked ? "Unlock on the keyboard to edit" : binding ? bindingSummary(behavior, mods) : ""}</span></span>
           <span className="prev-next">
             <button className="btn square" aria-label="Previous key" onClick={() => step(-1)}><Icon name="chevronLeft" /></button>
