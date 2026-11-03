@@ -221,7 +221,7 @@ h1, h2, p { margin: 0; }
 .placeholder-body { flex: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--space-12); padding: var(--space-46); max-width: 640px; }
 
 /* Phone: the sidebar becomes a drawer and the connection dot moves into the top bar. */
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .app { grid-template-columns: minmax(0, 1fr); }
   .sidebar {
     position: fixed; inset: 0 auto 0 0; width: 300px; z-index: 20; padding-top: var(--space-28);
@@ -396,7 +396,7 @@ a.btn { text-decoration: none; color: inherit; }
 .connection-actions .btn { height: 44px; }
 .key-sheet, .half-switch { display: none; }
 
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .scrim.drawer-scrim { display: block; z-index: 15; }
   .sidebar { padding: var(--space-64) var(--space-20) var(--space-32); box-shadow: none; }
   .brand { height: 40px; padding-left: var(--space-12); }
@@ -450,7 +450,7 @@ a.btn { text-decoration: none; color: inherit; }
 .connect-mobile-actions .notice { padding: 0; border: 0; background: transparent; }
 .connect-mobile-actions { display: flex; flex-direction: column; gap: var(--space-20); margin-top: auto; }
 .connect-big { height: 48px; }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .connect-body { padding: var(--space-40) var(--space-20) var(--space-24); }
   .hero { flex: 1; }
   .hero-icon { width: 52px; height: 52px; }
@@ -459,8 +459,8 @@ a.btn { text-decoration: none; color: inherit; }
 .t-logo { white-space: nowrap; }
 .nav { gap: 0; }
 @media (min-width: 761px) { .mobile-only { display: none !important; } }
-@media (max-width: 760px) { .desktop-only { display: none !important; } }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) { .desktop-only { display: none !important; } }
+@media (max-width: 760.98px) {
   .topbar .layer-tabs { height: 44px; width: 100%; order: 2; }
 }
 .dialog-buttons .topbar-spacer, .activator .topbar-spacer { display: block; flex: 1; }
@@ -511,7 +511,7 @@ a.btn { text-decoration: none; color: inherit; }
 .search input { border: 0; background: transparent; font: inherit; color: inherit; width: 100%; outline: none; }
 
 /* Phone: the Key Sheet carries the Inspector's fields and the Keycode Dialog fills the screen. */
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .sheet-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-12); }
   .sheet-fields .field-behavior, .sheet-fields .field-mods { grid-column: 1 / -1; }
   .sheet-fields.paired .field-behavior { grid-column: auto; }

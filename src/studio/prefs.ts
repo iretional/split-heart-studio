@@ -31,7 +31,7 @@ export function usePrefs() {
 export type Prefs = ReturnType<typeof usePrefs>;
 
 export function useIsMobile() {
-  const query = "(max-width: 760px)";
+  const query = "(max-width: 760.98px)";
   const [mobile, setMobile] = useState(() => window.matchMedia(query).matches);
   useEffect(() => {
     const m = window.matchMedia(query);
