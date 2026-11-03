@@ -1,13 +1,14 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type Ref } from "react";
 import { ALL_KEYCODES, KEYCODE_TABS, keycodeForUsage, type Keycode } from "../keyLabels";
 import { useIsMobile } from "../studio/prefs";
 import { Icon } from "./Icon";
+import { useEntrance } from "./useEntrance";
 
 /** Buttons for a list of keycodes, split into their ZMK groups. */
-function KeycodeGroups({ codes, current, onPick }: { codes: Keycode[]; current: number | null; onPick: (usage: number) => void }) {
+function KeycodeGroups({ codes, current, onPick, listRef }: { codes: Keycode[]; current: number | null; onPick: (usage: number) => void; listRef: Ref<HTMLDivElement> }) {
   const selected = current === null ? undefined : keycodeForUsage(current)?.usage;
   const groups = [...new Set(codes.map(c => c.group))];
-  return <div className="keycode-list">
+  return <div ref={listRef} className="keycode-list">
     {groups.map(g => <div key={g} className="keycode-group">
       <span className="t-caption muted">{g}</span>
       <div className="keycode-grid">
@@ -24,6 +25,7 @@ export function KeycodeDialog({ target, current, onPick, onClose }: { target: st
   // On a phone, focusing the field would zoom the page and raise the on-screen keyboard over the list.
   const mobile = useIsMobile();
   const dialog = useRef<HTMLDivElement>(null);
+  const listRoot = useEntrance<HTMLDivElement>(tab, false);
   // Runs on open, before paint, so the list never shows at the top first. Adjusting from the
   // current scroll position keeps the result the same if React runs this twice.
   useLayoutEffect(() => {
@@ -56,7 +58,7 @@ export function KeycodeDialog({ target, current, onPick, onClose }: { target: st
         {KEYCODE_TABS.map(t => <button key={t} role="tab" aria-selected={!q && t === tab} className={"tab t-label" + (!q && t === tab ? " active" : "")}
           onClick={() => { setTab(t); setSearch(""); dialog.current?.querySelector(".keycode-list")?.scrollTo(0, 0); }}>{t}</button>)}
       </div>
-      {codes.length ? <KeycodeGroups codes={codes} current={current} onPick={onPick} />
+      {codes.length ? <KeycodeGroups listRef={listRoot} codes={codes} current={current} onPick={onPick} />
         : <div className="keycode-list"><p className="t-caption muted">No keycode matches “{search}”.</p></div>}
       <div className="keycode-dialog-foot">
         <span className="t-caption muted">Keycodes follow ZMK. Picking one applies it and closes this window.</span>

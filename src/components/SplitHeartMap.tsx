@@ -1,5 +1,6 @@
-import type { KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { Icon, type IconName } from "./Icon";
+import { randomDir, reducedMotion, useHoverSelectFx } from "./useHoverSelectFx";
 import { CANVAS, HALF_BADGES, HALF_LABELS, KEY_SIZE, OUTLINE_DOTS, OUTLINES, SPLIT_HEART_KEY_COUNT, isLeftKey, keyTransform } from "../studio/splitHeartGeometry";
 
 export type KeyState = "default" | "selected" | "transparent";
@@ -13,6 +14,7 @@ const KEY_CENTER = KEY_SIZE / 2;
 const KEY_TEXT_WIDTH = 44;
 const MAX_CODE = 9;
 const KEY_ICON = 20;
+const FX_BANDS = [1, 2, 3, 4];
 
 /** Splits a name at its middle space when it is too long for one line: "Left Ctrl" over two lines. */
 function nameLines(name: string, oneLine: number) {
@@ -39,34 +41,59 @@ function KeyLabel({ name, code, compact }: { name: string; code: string; compact
 }
 
 /** Split Heart drawn like the Figma canvas: case outline, half labels and L/R badges plus 60 keys. */
-export function SplitHeartMap({ label, icon, code, hint, state, onSelect, compact, half, width, disabled }: {
+export function SplitHeartMap({ label, icon, code, hint, state, onSelect, compact, half, width, disabled, enterView }: {
   label: (i: number) => string; icon?: (i: number) => IconName | undefined; code?: (i: number) => string; hint?: (i: number) => string; state: (i: number) => KeyState; onSelect?: (i: number) => void;
-  compact?: boolean; half?: Half; width?: number; disabled?: boolean;
+  compact?: boolean; half?: Half; width?: number; disabled?: boolean; enterView?: string;
 }) {
   const { x, y, width: w, height: h } = CANVAS;
   const view = half ? HALF_VIEW[half] : compact ? "50 78 880 440" : `${x} ${y} ${w} ${h}`;
-  const onKey = (i: number) => (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect?.(i); } };
-  return <svg viewBox={view} width={half ? "100%" : width ?? w} className={"key-svg split-heart" + (compact ? " compact" : "") + (disabled ? " disabled" : "")} aria-label="Split Heart layout">
-    {OUTLINES.map((d, i) => <path key={i} className="case" d={d} />)}
-    {OUTLINE_DOTS.map(([cx, cy], i) => <circle key={i} className="case-dot" cx={cx} cy={cy} r={2.2} />)}
-    {HALF_BADGES.map(b => <g key={b.text}>
+  const fx = useHoverSelectFx<number>();
+    const shown = Array.from({ length: SPLIT_HEART_KEY_COUNT }, (_, i) => i).filter(i => !half || isLeftKey(i) === (half === "left"));
+  const faceOf = (i: number) => [label(i), code?.(i), icon?.(i)].join("|");
+  // A switch keeps the keys that still show the same thing; only the rest glitch in, one after another.
+  const faces = useRef(new Map<number, string>());
+  const enter = enterView !== undefined;
+  const [run, setRun] = useState(() => ({ view: enterView, keys: enter && !reducedMotion() ? shown : [], n: 0, dir: randomDir() }));
+  if (run.view !== enterView) setRun({ view: enterView, keys: reducedMotion() ? [] : shown.filter(i => faces.current.get(i) !== faceOf(i)), n: run.n + 1, dir: randomDir() });
+  useEffect(() => { faces.current = new Map(shown.map(i => [i, faceOf(i)])); });
+  const select = (i: number) => { if (state(i) !== "selected") fx.select(i); onSelect?.(i); };
+  const onKey = (i: number) => (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(i); } };
+  const interactive = !!onSelect && !disabled;
+  return <svg viewBox={view} width={half ? "100%" : width ?? w} className={"key-svg split-heart" + (compact ? " compact" : "") + (disabled ? " disabled" : "") + (enter ? " fx-enter-map" : "")} aria-label="Split Heart layout">
+    {(interactive || enter) && <defs>{FX_BANDS.map(n => <clipPath key={n} id={"fx-key-band-" + n}>
+      <rect x={-KEY_SIZE} y={(n - 1) * KEY_SIZE / 4} width={KEY_SIZE * 3} height={KEY_SIZE / 4 + 1} />
+    </clipPath>)}</defs>}
+    <g data-enter-item="">
+      {OUTLINES.map((d, i) => <path key={i} className="case" d={d} />)}
+      {OUTLINE_DOTS.map(([cx, cy], i) => <circle key={i} className="case-dot" cx={cx} cy={cy} r={2.2} />)}
+    </g>
+    {HALF_BADGES.map(b => <g key={b.text} data-enter-item="">
       <circle className="case" cx={b.cx} cy={b.cy} r={14.5} />
       {!compact && <text className="badge-label" x={b.cx} y={b.cy} textAnchor="middle" dominantBaseline="central">{b.text}</text>}
     </g>)}
-    {!compact && !half && HALF_LABELS.map(l => <g key={l.text}>
+    {!compact && !half && HALF_LABELS.map(l => <g key={l.text} data-enter-item="">
       <line className="half-dash" x1={l.dashX} x2={l.dashX + 10} y1={l.y} y2={l.y} />
       <text className="half-label" x={l.textX} y={l.y} textAnchor={l.anchor} dominantBaseline="central">{l.text}</text>
     </g>)}
     {Array.from({ length: SPLIT_HEART_KEY_COUNT }, (_, i) => {
       if (half && isLeftKey(i) !== (half === "left")) return null;
       const st = state(i), text = label(i);
-      return <g key={i} className={"key" + (st === "selected" ? " selected" : st === "transparent" ? " transparent" : "")} transform={keyTransform(i)}
-        {...(onSelect && !disabled ? { role: "button", tabIndex: 0, "aria-label": `Position ${i} ${text}`, "aria-pressed": st === "selected", onClick: () => onSelect(i), onKeyDown: onKey(i) } : {})}>
-        {hint?.(i) && <title>{hint(i)}</title>}
+      const face = <>
         <rect width={KEY_SIZE} height={KEY_SIZE} rx={compact ? 5 : 4} />
         {icon?.(i) && !code?.(i)
           ? <g transform={`translate(${KEY_CENTER - KEY_ICON / 2} ${KEY_CENTER - KEY_ICON / 2})`}><Icon name={icon(i)!} size={KEY_ICON} /></g>
           : <KeyLabel name={text} code={code?.(i) ?? ""} compact={compact} />}
+      </>;
+      const selecting = interactive && st === "selected" && fx.selecting === i;
+      const entering = run.keys.includes(i);
+      return <g key={i} className={"key" + (st === "selected" ? " selected" : st === "transparent" ? " transparent" : "") + (interactive && fx.hovering === i ? " fx-hover" : "") + (selecting ? " fx-select" : entering ? " fx-enter" : "")} transform={keyTransform(i)}
+        style={selecting ? fx.bandStyle : entering ? { "--fx-key-i": run.keys.indexOf(i), "--fx-dir": run.dir } as CSSProperties : undefined}
+        {...(interactive ? { role: "button", tabIndex: 0, "aria-label": `Position ${i} ${text}`, "aria-pressed": st === "selected", onClick: () => select(i), onKeyDown: onKey(i), onMouseEnter: () => { if (st !== "selected") fx.enter(i); }, onMouseLeave: () => fx.leave(i) } : {})}>
+        {hint?.(i) && <title>{hint(i)}</title>}
+        {face}
+        {(selecting || entering) && FX_BANDS.map(n => <g key={run.n + "-" + n} className="fx-band-wrap" clipPath={`url(#fx-key-band-${n})`}>
+          <g className={"fx-key-band fx-band-" + n} onAnimationEnd={n === 4 ? () => { if (selecting) fx.selectEnd(); if (i === run.keys[run.keys.length - 1]) setRun(r => ({ ...r, keys: [] })); } : undefined}>{face}</g>
+        </g>)}
       </g>;
     })}
   </svg>;

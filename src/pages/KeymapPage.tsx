@@ -1,10 +1,13 @@
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import type { BehaviorBinding, KeyPhysicalAttrs, Layer } from "@zmkfirmware/zmk-studio-ts-client/keymap";
+import { GlitchDigits } from "../components/GlitchDigits";
 import { Icon } from "../components/Icon";
 import { KeycodeDialog } from "../components/KeycodeDialog";
 import { LockBanner, TopBar } from "../components/Shell";
 import { SplitHeartMap } from "../components/SplitHeartMap";
+import { useEntrance } from "../components/useEntrance";
+import { useHoverSelectFx } from "../components/useHoverSelectFx";
 import { Checkbox, Segmented, Select } from "../components/ui";
 import { bindingLabel, implicitMods, keyboardUsageLabel, keycodeForUsage, keycodeText, toggleMod, withKeptMods } from "../keyLabels";
 import { behaviorId, isTransparent, keyParts } from "../studio/bindings";
@@ -27,6 +30,9 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const [half, setHalf] = useState<"Left" | "Right">("Left");
   const [picking, setPicking] = useState<1 | 2 | null>(null);
   const mobile = useIsMobile();
+  const tabFx = useHoverSelectFx<number>();
+  const tabKey = layerIndex + half;
+  const body = useEntrance<HTMLDivElement>(tabKey, false);
   useEffect(() => { if (focus) { setLayerIndex(focus.layer); setSelected(focus.key); } }, [focus]);
   useEffect(() => { if (selected !== null && mobile) setHalf(isLeftKey(selected) ? "Left" : "Right"); }, [selected, mobile]);
   const layer = keymap?.layers[Math.min(layerIndex, keymap.layers.length - 1)];
@@ -54,9 +60,16 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const toggleModifier = (name: string) => { if (modField && modValue !== null) setParam(modField.which, toggleMod(modValue, name)); };
 
   const tabs = <div className="tabs layer-tabs" role="tablist" aria-label="Layers">
-    {keymap ? keymap.layers.map((l, i) => <button key={l.id} role="tab" aria-selected={i === layerIndex}
-      className={"tab t-label" + (i === layerIndex ? " active" : "")}
-      onClick={() => setLayerIndex(i)}>{l.name || "Layer " + i}</button>)
+    {keymap ? keymap.layers.map((l, i) => {
+      const selecting = i === layerIndex && tabFx.selecting === i;
+      return <button key={l.id} role="tab" aria-selected={i === layerIndex}
+        className={"tab t-label" + (i === layerIndex ? " active" : "") + (tabFx.hovering === i ? " fx-hover" : "") + (selecting ? " fx-select" : "")}
+        onMouseEnter={() => { if (i !== layerIndex) tabFx.enter(i); }} onMouseLeave={() => tabFx.leave(i)}
+        onClick={() => { if (i !== layerIndex) tabFx.select(i); setLayerIndex(i); }}>
+        {l.name || "Layer " + i}
+        {selecting && [1, 2, 3, 4].map(n => <span key={n} aria-hidden="true" className={"tab-band fx-band-" + n} style={tabFx.bandStyle} onAnimationEnd={n === 4 ? tabFx.selectEnd : undefined}>{l.name || "Layer " + i}</span>)}
+      </button>;
+    })
       : <span className="tab t-label active">LAYER 0</span>}
     <button className="add-layer" aria-label="Add layer" disabled={!keymap || keymap.availableLayers <= 0} onClick={() => void addLayer()}><Icon name="plus" size={14} /></button>
   </div>;
@@ -71,12 +84,12 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   return <>
     <TopBar title="Keymap" subtitle={studio.device} tabs={tabs} studio={studio} onMenu={onMenu} />
     {locked && <LockBanner onRefresh={refresh} loading={loading} />}
-    <div className={"keymap-body" + (locked ? " locked" : "")}>
+    <div ref={body} className={"keymap-body" + (locked ? " locked" : "")}>
       <section className="canvas">
         {mobile && <div className="half-switch"><Segmented label="Keyboard half" value={half} options={["Left", "Right"] as const} onChange={setHalf} />
           <span className="t-caption muted">{half === "Left" ? "LEFT · CENTRAL" : "RIGHT · PERIPHERAL"}</span></div>}
         {isSplitHeart
-          ? <SplitHeartMap half={mobile ? (half === "Left" ? "left" : "right") : undefined} disabled={locked} label={i => parts(i).name} icon={i => parts(i).icon} code={i => parts(i).code} hint={i => parts(i).hint} state={state} onSelect={setSelected} />
+          ? <SplitHeartMap enterView={tabKey} half={mobile ? (half === "Left" ? "left" : "right") : undefined} disabled={locked} label={i => parts(i).name} icon={i => parts(i).icon} code={i => parts(i).code} hint={i => parts(i).hint} state={state} onSelect={setSelected} />
           : layer && layout && <KeyboardSvg keys={layout.keys} layer={layer} names={names} selected={selected} onSelect={setSelected} />}
       </section>
       <Inspector locked={locked} layer={layer} selected={selected} count={count} onSelect={setSelected}>{keyFields}</Inspector>
@@ -205,7 +218,7 @@ function Inspector({ locked, layer, selected, count, onSelect, children }: {
     <div className="key-header">
       <span className="t-caption muted">KEY</span>
       <div className="key-row">
-        <span className="t-display-mono">{positionName(selected)}</span>
+        <GlitchDigits className="t-display-mono" text={positionName(selected)} />
         <span className="key-steppers">
           <button className="icon-mini" aria-label="Previous key" onClick={() => onSelect((selected + count - 1) % count)}><Icon name="chevronLeft" /></button>
           <button className="icon-mini" aria-label="Next key" onClick={() => onSelect((selected + 1) % count)}><Icon name="chevronRight" /></button>

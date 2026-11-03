@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { PAGES, Sidebar, type Page } from "./components/Shell";
+import { useEntrance } from "./components/useEntrance";
 import { ConnectPage } from "./pages/ConnectPage";
 import { KeymapPage, type KeyFocus } from "./pages/KeymapPage";
 import { LayersPage } from "./pages/LayersPage";
+import { MotionPage } from "./pages/MotionPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { isDemo, useDemoStudio } from "./studio/demo";
 import { usePrefs } from "./studio/prefs";
@@ -33,13 +35,16 @@ export default function App() {
   const [focus, setFocus] = useState<KeyFocus | null>(null);
   const onMenu = () => setMenuOpen(true);
   const showKey = (f: KeyFocus) => { setFocus(f); navigate("keymap"); };
+  const view = page === "motion" ? page : studio.connected ? page : "connect";
+  const root = useEntrance<HTMLDivElement>(view + (studio.keymap ? ":loaded" : ""));
 
-  return <div className="app">
+  return <div className="app" ref={root}>
     <Sidebar page={page} onNavigate={navigate} navEnabled={studio.connected}
       device={studio.device} connected={studio.connected} lastSync={studio.lastSync}
       open={menuOpen} onClose={() => setMenuOpen(false)} />
     <main className="main">
-      {!studio.connected ? <ConnectPage studio={studio} onMenu={onMenu} />
+      {page === "motion" ? <MotionPage studio={studio} onMenu={onMenu} />
+        : !studio.connected ? <ConnectPage studio={studio} onMenu={onMenu} />
         : page === "keymap" ? <KeymapPage studio={studio} onMenu={onMenu} prefs={prefs} focus={focus} />
         : page === "layers" ? <LayersPage studio={studio} onMenu={onMenu} prefs={prefs} onShowKey={showKey} />
         : <SettingsPage studio={studio} onMenu={onMenu} prefs={prefs} />}

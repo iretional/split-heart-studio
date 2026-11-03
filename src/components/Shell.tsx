@@ -1,10 +1,13 @@
 import { useState, type ReactNode } from "react";
 import type { Studio } from "../studio/useStudio";
 import { Icon, type IconName } from "./Icon";
+import { useHoverSelectFx } from "./useHoverSelectFx";
 
-export const PAGES = ["keymap", "layers", "settings"] as const;
+export const PAGES = ["keymap", "layers", "settings", "motion"] as const;
 export type Page = typeof PAGES[number];
-const PAGE_ICONS: Record<Page, IconName> = { keymap: "caseSensitive", layers: "layers", settings: "settings" };
+const PAGE_ICONS: Record<Page, IconName> = { keymap: "caseSensitive", layers: "layers", settings: "settings", motion: "play" };
+/** These pages work without a keyboard connected. */
+const OFFLINE_PAGES: readonly Page[] = ["motion"];
 
 /** Connection Status component: dot + label on desktop, dot only in the phone top bar. */
 export function ConnectionStatus({ connected, variant }: { connected: boolean; variant: "desktop" | "mobile" }) {
@@ -27,6 +30,7 @@ export const syncText = (d: Date | null) => d
   : "—";
 
 export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastSync, open, onClose }: SidebarProps) {
+  const fx = useHoverSelectFx<Page>();
   return <>
     {open && <div className="scrim drawer-scrim" onClick={onClose} />}
     <aside className={"sidebar" + (open ? " open" : "")}>
@@ -34,10 +38,19 @@ export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastS
         <span className="t-logo">SPLIT STUDIO</span>
         <button className="icon-btn drawer-close" onClick={onClose} aria-label="Close menu"><Icon name="close" size={20} /></button>
       </div>
-      <nav className={"nav" + (navEnabled ? "" : " disabled")} aria-label="Pages">
-        {PAGES.map(p => <button key={p} className={"nav-item t-label" + (page === p ? " active" : "")}
-          aria-current={page === p ? "page" : undefined}
-          onClick={() => { onNavigate(p); onClose(); }}><Icon name={PAGE_ICONS[p]} size={20} />{p.toUpperCase()}</button>)}
+      <nav className="nav" aria-label="Pages">
+        {PAGES.map(p => {
+          const face = <><Icon name={PAGE_ICONS[p]} size={20} />{p.toUpperCase()}</>;
+          const selecting = page === p && fx.selecting === p;
+          return <button key={p} className={"nav-item t-label" + (page === p ? " active" : "") + (navEnabled || OFFLINE_PAGES.includes(p) ? "" : " disabled")
+            + (fx.hovering === p ? " fx-hover" : "") + (selecting ? " fx-select" : "")}
+            aria-current={page === p ? "page" : undefined}
+            onMouseEnter={() => { if (page !== p) fx.enter(p); }} onMouseLeave={() => fx.leave(p)}
+            onClick={() => { if (page !== p) fx.select(p); onNavigate(p); onClose(); }}>
+            {face}
+            {selecting && [1, 2, 3, 4].map(n => <span key={n} aria-hidden="true" className={"nav-band fx-band-" + n} style={fx.bandStyle} onAnimationEnd={n === 4 ? fx.selectEnd : undefined}>{face}</span>)}
+          </button>;
+        })}
       </nav>
       <div className="device">
         <span className="t-caption muted">DEVICE</span>

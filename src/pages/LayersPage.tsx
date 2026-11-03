@@ -3,6 +3,7 @@ import type { Layer } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { Icon } from "../components/Icon";
 import { LockBanner, TopBar } from "../components/Shell";
 import { MiniKeymap, SplitHeartMap } from "../components/SplitHeartMap";
+import { useHoverSelectFx } from "../components/useHoverSelectFx";
 import { DragHandle, Field } from "../components/ui";
 import { countText, isTransparent, keyParts, keyText } from "../studio/bindings";
 import type { Prefs } from "../studio/prefs";
@@ -29,6 +30,7 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
   const { keymap, names, locked, loading, refresh, removed, addLayer, moveLayer, removeLayer, restoreLayer, renameLayer } = studio;
   const [selected, setSelected] = useState(0);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const rowFx = useHoverSelectFx<number>();
   const layers = keymap?.layers ?? [];
   const index = Math.min(selected, Math.max(0, layers.length - 1));
   const layer = layers[index];
@@ -37,6 +39,7 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
   const [nameDraft, setNameDraft] = useState("");
   useEffect(() => setNameDraft(layer?.name ?? ""), [layer?.id, layer?.name]);
   const commitName = () => { if (layer && nameDraft !== layer.name) void renameLayer(layer.id, nameDraft); };
+  const pick = (i: number) => { if (i !== index) rowFx.select(i); setSelected(i); };
   const move = (to: number) => { if (to >= 0 && to < layers.length) { void moveLayer(index, to); setSelected(to); } };
   const addDisabled = !keymap || (keymap.availableLayers ?? 0) <= 0;
   const list = activators(layers, layer ?? { id: -1, name: "", bindings: [] }, index, names);
@@ -55,18 +58,25 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
           <button className="btn" disabled={addDisabled} onClick={() => void addLayer()}><Icon name="plus" size={14} /><span className="desktop-only">Add layer</span><span className="mobile-only">Add</span></button>
         </div>
         <div className="rows">
-          {layers.map((l, i) => <div key={l.id} role="button" tabIndex={0} draggable
-            className={"layer-row" + (i === index ? " selected" : "")}
-            onClick={() => setSelected(i)}
-            onKeyDown={e => { if (e.key === "Enter") setSelected(i); }}
+          {layers.map((l, i) => <div key={l.id} role="button" tabIndex={0}
+            className={"layer-row" + (i === index ? " selected" : "") + (rowFx.hovering === i ? " fx-hover" : "") + (i === index && rowFx.selecting === i ? " fx-select" : "")}
+            onMouseEnter={() => { if (i !== index) rowFx.enter(i); }} onMouseLeave={() => rowFx.leave(i)}
+            onAnimationEnd={e => { if (e.animationName === "fx-layer-box") rowFx.selectEnd(); }}
+            onClick={() => pick(i)}
+            onKeyDown={e => { if (e.key === "Enter") pick(i); }}
             onDragStart={() => setDragFrom(i)}
             onDragOver={e => e.preventDefault()}
             onDrop={() => { if (dragFrom !== null && dragFrom !== i) { void moveLayer(dragFrom, i); setSelected(i); } setDragFrom(null); }}>
-            <DragHandle />
+            <span className="drag-grip" draggable><DragHandle /></span>
             <span className="layer-index t-label">{i}</span>
             <span className="layer-text"><span className="t-body-strong layer-name">{layerName(l, i)}</span><span className="t-caption muted">{countText(l, names)}</span></span>
             <span className="desktop-only"><MiniKeymap bound={k => !isTransparent(l.bindings[k], names)} /></span>
             <span className="row-more"><Icon name="more" size={16} /></span>
+            {i === index && rowFx.selecting === i && <span className="fx-shuffle" aria-hidden="true">
+              <span className="m-layer m-shuffle-x" />
+              <span className="m-layer t-display m-shuffle-bang">!</span>
+              <span className="m-layer m-shuffle-hatch" />
+            </span>}
           </div>)}
           {removed.map(item => <div key={item.layer.id} className="layer-row removed">
             <DragHandle />
@@ -76,7 +86,7 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
             <button className="btn" onClick={() => void restoreLayer(item)}>Restore</button>
           </div>)}
         </div>
-        <span className="list-hint t-caption muted desktop-only">Drag rows to reorder. Changes reach the keyboard only after Save.</span>
+        <span className="list-hint t-caption muted desktop-only">Drag a handle to reorder. Changes reach the keyboard only after Save.</span>
       </section>
 
       {layer ? <section className="layer-detail desktop-only">
