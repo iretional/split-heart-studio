@@ -563,7 +563,6 @@ a.btn { text-decoration: none; color: inherit; }
   .steps { gap: var(--space-12); }
 }
 .t-logo { white-space: nowrap; }
-@media (min-width: 761px) { .topbar-title.with-tabs { display: none; } }
 .nav { gap: 0; }
 @media (min-width: 761px) { .mobile-only { display: none !important; } }
 @media (max-width: 760px) { .desktop-only { display: none !important; } }
@@ -582,3 +581,22 @@ a.btn { text-decoration: none; color: inherit; }
 }
 .add-step { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .add-step .btn { padding: 0 var(--space-2); }
+
+.t-logo { letter-spacing: .2em; }
+
+/* Below sidebar + content max width the sidebar leaves the layout and opens as an overlay from the menu icon. */
+@media (min-width: 1464px) { .topbar-title.with-tabs { display: none; } }
+@media (min-width: 761px) and (max-width: 1463px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; width: 300px; z-index: 20; padding: var(--space-64) var(--space-20) var(--space-32);
+    transform: translateX(-100%); transition: transform .2s ease;
+  }
+  .sidebar.open { transform: none; }
+  .scrim.drawer-scrim { display: block; z-index: 15; }
+  .drawer-close, .menu-btn { display: inline-flex; }
+  .brand { height: 40px; }
+  .nav { margin-top: var(--space-48); }
+  .topbar { padding-left: var(--space-8); }
+  .topbar-title.with-tabs .topbar-name, .topbar-title.with-tabs .topbar-sub { display: none; }
+}
