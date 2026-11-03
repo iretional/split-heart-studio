@@ -63,6 +63,8 @@ const usage: Record<string, number> = {
 };
 const bind = (label: string) => {
   if (label === "▽") return { behaviorId: 2, param1: 0, param2: 0 };
+  if (label === "VolUp") return { behaviorId: 1, param1: 0xc00e9, param2: 0 };
+  if (label === "VolDn") return { behaviorId: 1, param1: 0xc00ea, param2: 0 };
   if (label.startsWith("MO")) return { behaviorId: 3, param1: Number(label.slice(2)), param2: 0 };
   if (/^[A-Z]$/.test(label)) return { behaviorId: 1, param1: 0x70000 | (0x04 + label.charCodeAt(0) - 65), param2: 0 };
   if (/^[0-9]$/.test(label)) return { behaviorId: 1, param1: 0x70000 | (label === "0" ? 0x27 : 0x1e + Number(label) - 1), param2: 0 };
@@ -79,7 +81,7 @@ const base = {
     ["Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "\\"],
     ["Ctrl", "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"],
     ["Shft", "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "Shft"]]),
-  42: "Alt", 43: "GUI", 48: "[", 49: "]", 50: "MO1", 51: "Spc", 52: "Del", 53: "Bspc", 510: "Ent", 511: "MO2", 59: "Spc", 58: "Esc",
+  42: "Alt", 43: "GUI", 48: "[", 49: "]", 50: "MO1", 51: "Spc", 52: "Del", 53: "Bspc", 510: "Ent", 511: "MO2", 59: "VolDn", 58: "VolUp",
 };
 const lower = rowMap(cols, [["`", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "Bspc"],
   ["▽", "▽", "▽", "▽", "▽", "▽", "▽", "▽", "▽", "▽", "▽", "▽"],

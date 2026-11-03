@@ -1,12 +1,18 @@
-import { KEYCODE_NAMES } from "./keycodeNames";
+import type { IconName } from "./components/Icon";
+import { KEYCODE_ICONS, KEYCODE_NAMES, KEYCODE_SYMBOLS } from "./keycodeNames";
 import { ZMK_KEYCODE_ROWS } from "./zmkKeycodes";
 
-export type Keycode = { label: string; usage: number; zmk: string; aliases: string[]; tab: string; group: string; description: string };
+/** label is the key's role, symbol or icon is what the keyboard map shows. */
+export type Keycode = { label: string; symbol: string; icon?: IconName; usage: number; zmk: string; aliases: string[]; tab: string; group: string; description: string };
 const page7 = (id: number) => 0x70000 | id;
 
 /** Every ZMK keycode. `zmk` is the name written in a keymap, `label` is what the button shows. */
 export const ALL_KEYCODES: Keycode[] = ZMK_KEYCODE_ROWS.map(([tab, group, zmk, usage, aliases, description]) =>
-  ({ label: KEYCODE_NAMES[zmk] ?? zmk, usage, zmk, aliases: aliases ? aliases.split(" ") : [], tab, group, description }));
+  {
+    const label = KEYCODE_NAMES[zmk] ?? zmk;
+    const symbol = KEYCODE_SYMBOLS[zmk] ?? (tab === "KEYPAD" ? "KP " + label : label);
+    return { label, symbol, icon: KEYCODE_ICONS[zmk], usage, zmk, aliases: aliases ? aliases.split(" ") : [], tab, group, description };
+  });
 
 /** Label outside the Keypad tab, where 1 and KP_N1 would otherwise read the same. */
 export const keycodeText = (c: Keycode) => c.tab === "KEYPAD" ? "Keypad " + c.label : c.label;

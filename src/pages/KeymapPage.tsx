@@ -61,7 +61,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
     <button className="add-layer" aria-label="Add layer" disabled={!keymap || keymap.availableLayers <= 0} onClick={() => void addLayer()}><Icon name="plus" size={14} /></button>
   </div>;
 
-  const parts = (i: number) => layer ? keyParts(i, layer.bindings[i], names, prefs.keyLabels, keymap?.layers) : { name: positionName(i), code: "", hint: "" };
+  const parts = (i: number) => layer ? keyParts(i, layer.bindings[i], names, prefs.keyLabels, keymap?.layers) : { name: positionName(i), icon: undefined, code: "", hint: "" };
   const state = (i: number) => selected === i ? "selected" as const : layer && isTransparent(layer.bindings[i], names) ? "transparent" as const : "default" as const;
   const step = (d: number) => setSelected(s => ((s ?? 0) + d + count) % count);
   const pickingValue = binding && picking ? (picking === 1 ? binding.param1 : binding.param2) : 0;
@@ -76,7 +76,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
         {mobile && <div className="half-switch"><Segmented label="Keyboard half" value={half} options={["Left", "Right"] as const} onChange={setHalf} />
           <span className="t-caption muted">{half === "Left" ? "LEFT · CENTRAL" : "RIGHT · PERIPHERAL"}</span></div>}
         {isSplitHeart
-          ? <SplitHeartMap half={mobile ? (half === "Left" ? "left" : "right") : undefined} disabled={locked} label={i => parts(i).name} code={i => parts(i).code} hint={i => parts(i).hint} state={state} onSelect={setSelected} />
+          ? <SplitHeartMap half={mobile ? (half === "Left" ? "left" : "right") : undefined} disabled={locked} label={i => parts(i).name} icon={i => parts(i).icon} code={i => parts(i).code} hint={i => parts(i).hint} state={state} onSelect={setSelected} />
           : layer && layout && <KeyboardSvg keys={layout.keys} layer={layer} names={names} selected={selected} onSelect={setSelected} />}
       </section>
       <Inspector locked={locked} layer={layer} selected={selected} count={count} onSelect={setSelected}>{keyFields}</Inspector>

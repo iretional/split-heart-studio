@@ -1,4 +1,8 @@
-// Readable name for each ZMK keycode, shown above its ZMK name on the key.
+import type { IconName } from "./components/Icon";
+
+// Each key has four facts: a symbol (what the keyboard map shows), a role (the readable name),
+// its ZMK keycode, and a description from keys.h. This file holds the first two.
+// Roles: shown above the keycode in the Keycode Dialog and in the Inspector.
 // Keys whose ZMK name already reads well (A to Z, F1 to F24) are left out and show that name.
 // Paired K_ and C_ codes share a name on purpose; the ZMK name below tells them apart.
 const digits = (prefix: string) => Object.fromEntries("0123456789".split("").map(d => [prefix + d, d]));
@@ -82,4 +86,19 @@ export const KEYCODE_NAMES: Record<string, string> = {
 
   // Power and lock
   SYS_PWR: "Power Down", SYS_SLEEP: "Sleep", SYS_WAKE: "Wake", K_PWR: "Power", K_SLEEP: "Sleep", C_PWR: "Power", C_RESET: "Reset", C_SLEEP: "Sleep", C_SLEEP_MODE: "Sleep Mode", C_AL_SCREEN_SAVER: "Screen Saver",
+};
+
+// Symbols: what a map key shows. A key not listed here shows its role, and Keypad keys get a KP prefix.
+export const KEYCODE_SYMBOLS: Record<string, string> = {
+  LCTRL: "Ctrl(L)", RCTRL: "Ctrl(R)", LSHFT: "Shift(L)", RSHFT: "Shift(R)", LALT: "Alt(L)", RALT: "Alt(R)", LGUI: "Win(L)", RGUI: "Win(R)",
+  PG_UP: "PgUp", PG_DN: "PgDn", CAPS: "Caps", SLCK: "ScrLk", PSCRN: "PrtSc", KP_NUM: "NumLk",
+  LANG1: "한/영", LANG2: "한자",
+};
+
+// Symbols drawn as an icon instead of text.
+export const KEYCODE_ICONS: Partial<Record<string, IconName>> = {
+  C_VOL_UP: "volumeUp", K_VOL_UP: "volumeUp", K_VOL_UP2: "volumeUp", C_VOL_DN: "volumeDown", K_VOL_DN: "volumeDown", K_VOL_DN2: "volumeDown",
+  C_MUTE: "mute", K_MUTE: "mute", K_MUTE2: "mute", C_PP: "playPause", K_PP: "playPause", C_PLAY: "play", C_PAUSE: "pause", C_STOP: "stop", K_STOP2: "stop",
+  C_NEXT: "nextTrack", K_NEXT: "nextTrack", C_PREV: "previousTrack", K_PREV: "previousTrack", C_FF: "fastForward", C_RW: "rewind",
+  C_EJECT: "eject", K_EJECT: "eject", C_REC: "record", C_SHUFFLE: "shuffle", C_REPEAT: "repeat", C_BRI_UP: "brightnessUp", C_BRI_DN: "brightnessDown",
 };

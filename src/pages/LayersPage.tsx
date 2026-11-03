@@ -4,7 +4,7 @@ import { Icon } from "../components/Icon";
 import { LockBanner, TopBar } from "../components/Shell";
 import { MiniKeymap, SplitHeartMap } from "../components/SplitHeartMap";
 import { DragHandle, Field } from "../components/ui";
-import { countText, isTransparent, keyText } from "../studio/bindings";
+import { countText, isTransparent, keyParts, keyText } from "../studio/bindings";
 import type { Prefs } from "../studio/prefs";
 import type { Studio } from "../studio/useStudio";
 import type { KeyFocus } from "./KeymapPage";
@@ -97,6 +97,7 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
             <span className="t-caption muted">{countText(layer, names)}  ·  ▽ falls through to the layer below</span></div>
           <div className="preview-map"><SplitHeartMap compact width={605}
             label={i => keyText(i, layer.bindings[i], names, prefs.keyLabels, layers)}
+            icon={i => keyParts(i, layer.bindings[i], names, prefs.keyLabels, layers).icon}
             state={i => isTransparent(layer.bindings[i], names) ? "transparent" : "default"} /></div>
         </div>
         <div className="activated">

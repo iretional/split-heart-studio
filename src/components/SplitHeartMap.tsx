@@ -1,4 +1,5 @@
 import type { KeyboardEvent } from "react";
+import { Icon, type IconName } from "./Icon";
 import { CANVAS, HALF_BADGES, HALF_LABELS, KEY_SIZE, OUTLINE_DOTS, OUTLINES, SPLIT_HEART_KEY_COUNT, isLeftKey, keyTransform } from "../studio/splitHeartGeometry";
 
 export type KeyState = "default" | "selected" | "transparent";
@@ -11,6 +12,7 @@ const KEY_CENTER = KEY_SIZE / 2;
 /** Widest text that fits a key, inside its border. */
 const KEY_TEXT_WIDTH = 44;
 const MAX_CODE = 9;
+const KEY_ICON = 20;
 
 /** Splits a name at its middle space when it is too long for one line: "Left Ctrl" over two lines. */
 function nameLines(name: string, oneLine: number) {
@@ -37,8 +39,8 @@ function KeyLabel({ name, code, compact }: { name: string; code: string; compact
 }
 
 /** Split Heart drawn like the Figma canvas: case outline, half labels and L/R badges plus 60 keys. */
-export function SplitHeartMap({ label, code, hint, state, onSelect, compact, half, width, disabled }: {
-  label: (i: number) => string; code?: (i: number) => string; hint?: (i: number) => string; state: (i: number) => KeyState; onSelect?: (i: number) => void;
+export function SplitHeartMap({ label, icon, code, hint, state, onSelect, compact, half, width, disabled }: {
+  label: (i: number) => string; icon?: (i: number) => IconName | undefined; code?: (i: number) => string; hint?: (i: number) => string; state: (i: number) => KeyState; onSelect?: (i: number) => void;
   compact?: boolean; half?: Half; width?: number; disabled?: boolean;
 }) {
   const { x, y, width: w, height: h } = CANVAS;
@@ -62,7 +64,9 @@ export function SplitHeartMap({ label, code, hint, state, onSelect, compact, hal
         {...(onSelect && !disabled ? { role: "button", tabIndex: 0, "aria-label": `Position ${i} ${text}`, "aria-pressed": st === "selected", onClick: () => onSelect(i), onKeyDown: onKey(i) } : {})}>
         {hint?.(i) && <title>{hint(i)}</title>}
         <rect width={KEY_SIZE} height={KEY_SIZE} rx={compact ? 5 : 4} />
-        <KeyLabel name={text} code={code?.(i) ?? ""} compact={compact} />
+        {icon?.(i) && !code?.(i)
+          ? <g transform={`translate(${KEY_CENTER - KEY_ICON / 2} ${KEY_CENTER - KEY_ICON / 2})`}><Icon name={icon(i)!} size={KEY_ICON} /></g>
+          : <KeyLabel name={text} code={code?.(i) ?? ""} compact={compact} />}
       </g>;
     })}
   </svg>;

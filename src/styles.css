@@ -157,6 +157,9 @@ h1, h2, p { margin: 0; }
 .key.selected rect { fill: var(--accent-base); stroke: var(--accent-base); stroke-width: 1.5; }
 .key.selected text { fill: var(--onsurface-inverted); }
 .split-heart .key text, .split-heart .half-label, .badge-label { font-size: 11px; }
+.key { color: var(--onsurface-base); }
+.key.selected { color: var(--surface-base); }
+.key.transparent { color: var(--onsurface-muted); }
 .key text.key-code { fill: var(--onsurface-variant); }
 .key.selected text.key-code { fill: var(--surface-variant); }
 .split-heart .half-label { letter-spacing: .04em; }
