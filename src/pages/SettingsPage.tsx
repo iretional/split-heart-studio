@@ -3,7 +3,8 @@ import type { Keymap } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { Icon } from "../components/Icon";
 import { ConnectionStatus, LockBanner, TopBar, syncText } from "../components/Shell";
 import { MiniKeymap } from "../components/SplitHeartMap";
-import { Segmented, Select } from "../components/ui";
+import { Select } from "../components/Select";
+import { Segmented } from "../components/ui";
 import type { KeyLabelMode, Prefs, Theme } from "../studio/prefs";
 import type { Studio } from "../studio/useStudio";
 

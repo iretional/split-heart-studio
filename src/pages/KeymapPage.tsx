@@ -8,10 +8,11 @@ import { LockBanner, TopBar } from "../components/Shell";
 import { SplitHeartMap } from "../components/SplitHeartMap";
 import { useEntrance } from "../components/useEntrance";
 import { useHoverSelectFx } from "../components/useHoverSelectFx";
-import { Checkbox, Segmented, Select } from "../components/ui";
+import { Select } from "../components/Select";
+import { Checkbox, Segmented } from "../components/ui";
 import { bindingLabel, implicitMods, keyboardUsageLabel, keycodeForUsage, keycodeText, toggleMod, withKeptMods } from "../keyLabels";
 import { behaviorId, isTransparent, keyParts } from "../studio/bindings";
-import { defaultBinding, paramFields, type ParamField } from "../studio/behaviors";
+import { behaviorName, behaviorOptions, defaultBinding, paramFields, type ParamField } from "../studio/behaviors";
 import { useIsMobile, type Prefs } from "../studio/prefs";
 import { SPLIT_HEART_KEY_COUNT, isLeftKey, positionName } from "../studio/splitHeartGeometry";
 import type { Studio } from "../studio/useStudio";
@@ -37,7 +38,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   useEffect(() => { if (selected !== null && mobile) setHalf(isLeftKey(selected) ? "Left" : "Right"); }, [selected, mobile]);
   const layer = keymap?.layers[Math.min(layerIndex, keymap.layers.length - 1)];
   const binding = selected === null ? null : layer?.bindings[selected] ?? null;
-  const behavior = binding ? names[binding.behaviorId] ?? "Behavior #" + binding.behaviorId : "";
+  const behavior = binding ? behaviorName(names[binding.behaviorId] ?? "Behavior #" + binding.behaviorId) : "";
   const details = binding ? behaviors.find(b => b.id === binding.behaviorId) : undefined;
   const fields = binding && keymap ? paramFields(details, binding, keymap.layers) : [];
   // The checkboxes edit the last keycode a behavior takes, which is the tap key on a mod-tap.
@@ -184,10 +185,10 @@ function KeyFields({ binding, names, behavior, behaviors, fields, showMods, mods
 }) {
   const value = (which: 1 | 2) => which === 1 ? binding.param1 : binding.param2;
   const usageText = (v: number) => { const c = keycodeForUsage(v); return c ? keycodeText(c) : keyboardUsageLabel(v) ?? bindingLabel(binding.behaviorId, v, v, names).title; };
-  const behaviorOptions = behaviors.length ? behaviors.map(b => ({ value: String(b.id), label: b.displayName || "Behavior #" + b.id })) : [{ value: String(binding.behaviorId), label: behavior }];
+  const options = behaviors.length ? behaviorOptions(behaviors) : [{ value: String(binding.behaviorId), label: behavior }];
   return <>
     <div className="field field-behavior"><span className="t-caption muted">BEHAVIOR</span>
-      <Select label="Behavior" value={String(binding.behaviorId)} options={behaviorOptions} disabled={!behaviors.length} onChange={onBehavior} /></div>
+      <Select label="Behavior" value={String(binding.behaviorId)} options={options} disabled={!behaviors.length} onChange={onBehavior} /></div>
     {fields.map(f => <div key={f.which} className="field"><span className="t-caption muted">{f.label}</span>
       {f.kind === "hid"
         ? <div className="box box-field t-body-strong">

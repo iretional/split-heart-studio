@@ -1084,22 +1084,95 @@ a.btn {
   width: 100%;
   min-width: 0;
 }
-.select select {
-  appearance: none;
+.select-trigger {
   width: 100%;
   height: 36px;
-  padding: 0 var(--space-32) 0 var(--space-12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: 0 var(--space-12);
+  border: 1px solid var(--outline-base);
   border-radius: 3px;
   background: var(--surface-base);
-  border: 1px solid var(--outline-base);
   color: var(--onsurface-base);
+  text-align: left;
+  cursor: pointer;
 }
-.select svg {
-  position: absolute;
-  right: var(--space-12);
-  top: 11px;
-  pointer-events: none;
+.select-trigger:not(:disabled):hover {
+  background: var(--surface-hovered);
+}
+.select-trigger:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.select-trigger[aria-expanded="true"] {
+  border-color: var(--accent-base);
+}
+.select-trigger svg {
+  flex: none;
   color: var(--onsurface-variant);
+}
+.select-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.select-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-menu {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--outline-strong) transparent;
+  border: 1px solid var(--outline-strong);
+  border-radius: 3px;
+  background: var(--surface-base);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.15);
+  outline: none;
+  animation: m-blinky var(--fx-overlay) step-end backwards;
+}
+.select-row {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+}
+.select-group {
+  padding: var(--space-12) var(--space-8) var(--space-4);
+  text-transform: uppercase;
+}
+.select-row:first-child .select-group {
+  padding-top: var(--space-6);
+}
+.select-option {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: 0 var(--space-8);
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--onsurface-base);
+  text-align: left;
+  cursor: pointer;
+}
+.select-option svg {
+  flex: none;
+}
+.select-option.active {
+  background: var(--surface-hovered);
+}
+.select-option[aria-selected="true"] {
+  background: var(--accent-base);
+  color: var(--onsurface-inverted);
 }
 .select.disabled {
   opacity: 0.6;
@@ -3545,7 +3618,8 @@ button[data-fx-glitch] > :not(.btn-band) {
 @media (prefers-reduced-motion: reduce) {
   .dialog,
   .connection-sheet,
-  .popover {
+  .popover,
+  .select-menu {
     animation: none;
   }
   .m-square,

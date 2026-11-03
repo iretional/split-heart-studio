@@ -33,8 +33,10 @@ for (const [n, cx, cy, deg] of [["50", 594, 510, 15], ["51", 658, 516, 20], ["52
 
 const hid = (name: string) => ({ name, hidUsage: { keyboardMax: 0, consumerMax: 0 } });
 const layerParam = { name: "Layer", layerId: {} };
+const constants = (...labels: string[]) => labels.map((name, constant) => ({ name, constant }));
 const one = (param1: GetBehaviorDetailsResponse["metadata"][number]["param1"], param2: typeof param1 = []) => [{ param1, param2 }];
-// Sample of what a firmware reports; ids and names are not real. Email and Home Row Mod stand in for behaviors defined in zmk-config.
+// What zmk-config should report on ZMK v0.3, read from their source. Ids and parameter details are made up.
+// Behaviors a keymap defines without a display name arrive under their device name.
 const DEMO_BEHAVIORS: GetBehaviorDetailsResponse[] = [
   { id: 1, displayName: "Key Press", metadata: one([hid("Key")]) },
   { id: 2, displayName: "Transparent", metadata: [] },
@@ -52,8 +54,22 @@ const DEMO_BEHAVIORS: GetBehaviorDetailsResponse[] = [
     { param1: [{ name: "Clear", constant: 0 }, { name: "Next", constant: 1 }, { name: "Prev", constant: 2 }], param2: [] },
     { param1: [{ name: "Select", constant: 3 }], param2: [{ name: "Profile", range: { min: 0, max: 4 } }] },
   ] },
-  { id: 14, displayName: "Email", metadata: [] },
-  { id: 15, displayName: "Home Row Mod", metadata: one([hid("Hold")], [hid("Tap")]) },
+  { id: 14, displayName: "To Layer", metadata: one([layerParam]) },
+  { id: 15, displayName: "Grave/Escape", metadata: [] },
+  { id: 16, displayName: "Mouse Key Press", metadata: one(constants("Left", "Right", "Middle", "Back", "Forward")) },
+  { id: 17, displayName: "mouse_move", metadata: one(constants("Up", "Down", "Left", "Right")) },
+  { id: 18, displayName: "mouse_scroll", metadata: one(constants("Up", "Down", "Left", "Right")) },
+  { id: 19, displayName: "Output Selection", metadata: one(constants("Toggle", "USB", "Bluetooth")) },
+  { id: 20, displayName: "Backlight", metadata: one(constants("On", "Off", "Toggle", "Brighter", "Dimmer")) },
+  { id: 21, displayName: "Reset", metadata: [] },
+  { id: 22, displayName: "Bootloader", metadata: [] },
+  { id: 23, displayName: "Studio Unlock", metadata: [] },
+  { id: 24, displayName: "home_row_mod_left", metadata: one([hid("Hold")], [hid("Tap")]) },
+  { id: 25, displayName: "home_row_mod_right", metadata: one([hid("Hold")], [hid("Tap")]) },
+  { id: 26, displayName: "tap_dance_mouse_m45", metadata: [] },
+  ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((n, i) => ({ id: 27 + i, displayName: `kpn${n}_shiftn${n}`, metadata: [] })),
+  { id: 37, displayName: "kpminus_under", metadata: [] },
+  { id: 38, displayName: "kpplus_equal", metadata: [] },
 ];
 const BEHAVIORS: Record<number, string> = Object.fromEntries(DEMO_BEHAVIORS.map(b => [b.id, b.displayName]));
 const usage: Record<string, number> = {

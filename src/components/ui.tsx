@@ -5,18 +5,6 @@ export function Field({ label, children, className }: { label: string; children:
   return <div className={"field" + (className ? " " + className : "")}><span className="t-caption muted">{label}</span>{children}</div>;
 }
 
-/** Select component: a native select so keyboard and phone pickers keep working. */
-export function Select<T extends string>({ value, options, onChange, disabled, label }: {
-  value: T; options: readonly { value: T; label: string }[]; onChange: (v: T) => void; disabled?: boolean; label?: string;
-}) {
-  return <span className={"select" + (disabled ? " disabled" : "")}>
-    <select className="t-body" value={value} disabled={disabled} aria-label={label} onChange={e => onChange(e.target.value as T)}>
-      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-    </select>
-    <Icon name="chevronDown" size={14} />
-  </span>;
-}
-
 export function Checkbox({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
   return <button type="button" role="checkbox" aria-checked={checked} disabled={disabled} className={"check" + (checked ? " on" : "")} onClick={() => onChange(!checked)}>
     <i>{checked && <Icon name="check" size={10} />}</i><span className="t-body variant">{label}</span>

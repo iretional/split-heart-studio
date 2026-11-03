@@ -6,8 +6,14 @@ import { ZMK_KEYCODE_ROWS } from "./zmkKeycodes";
 export type Keycode = { label: string; symbol: string; icon?: IconName; usage: number; zmk: string; aliases: string[]; tab: string; group: string; description: string };
 const page7 = (id: number) => 0x70000 | id;
 
+const KEYPAD_GROUPS = ["NUMBERS", "SYMBOLS", "FUNCTIONS"];
+const keypadGroup = (zmk: string) => /^KP_N\d$/.test(zmk) ? "NUMBERS" : ["KP_NUM", "KP_ENTER", "KP_CLEAR"].includes(zmk) ? "FUNCTIONS" : "SYMBOLS";
+const keypadRows = ZMK_KEYCODE_ROWS.filter(r => r[0] === "KEYPAD")
+  .map(r => [...r.slice(0, 1), keypadGroup(r[2]), ...r.slice(2)] as unknown as typeof r)
+  .sort((a, b) => KEYPAD_GROUPS.indexOf(a[1]) - KEYPAD_GROUPS.indexOf(b[1]));
+
 /** Every ZMK keycode. `zmk` is the name written in a keymap, `label` is what the button shows. */
-export const ALL_KEYCODES: Keycode[] = ZMK_KEYCODE_ROWS.map(([tab, group, zmk, usage, aliases, description]) =>
+export const ALL_KEYCODES: Keycode[] = ZMK_KEYCODE_ROWS.map(r => r[0] === "KEYPAD" ? keypadRows.shift()! : r).map(([tab, group, zmk, usage, aliases, description]) =>
   {
     const label = KEYCODE_NAMES[zmk] ?? zmk;
     const symbol = KEYCODE_SYMBOLS[zmk] ?? (tab === "KEYPAD" ? "KP " + label : label);

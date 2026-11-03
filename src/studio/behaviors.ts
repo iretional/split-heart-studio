@@ -36,6 +36,43 @@ function field(which: 1 | 2, values: ParamValue[], solo: boolean, layers: Layer[
   return { which, kind: "options", label: named, options };
 }
 
+/** Order of the Behavior list. Anything a keymap defines for itself goes last, under Custom. */
+const BEHAVIOR_GROUPS: [string, string[]][] = [
+  ["Basic", ["Key Press", "Transparent", "None"]],
+  ["Layers", ["Momentary Layer", "Layer-Tap", "Toggle Layer", "To Layer", "Sticky Layer"]],
+  ["Keys", ["Mod-Tap", "Sticky Key", "Key Toggle", "Key Repeat", "Caps Word", "Grave/Escape"]],
+  ["Mouse", ["Mouse Key Press", "Mouse Move", "Mouse Scroll"]],
+  ["System", ["Bluetooth", "Output Selection", "Backlight", "Underglow", "External Power", "Reset", "Bootloader", "Studio Unlock", "Soft Off"]],
+];
+const CUSTOM_GROUP = "Custom";
+/** Firmware falls back to the device name for a behavior without a display name. */
+const DEVICE_NAMES: Record<string, string> = {
+  mouse_move: "Mouse Move", mouse_scroll: "Mouse Scroll", z_so_off: "Soft Off", tap_dance_mouse_m45: "Tap Dance Mouse",
+  kpminus_under: "Keypad - / _", kpplus_equal: "Keypad + / =",
+};
+const SHIFTED_DIGITS = ")!@#$%^&*(";
+
+/** A readable name for what the firmware reports, which for a keymap's own behaviors is a device name. */
+export function behaviorName(name: string) {
+  if (DEVICE_NAMES[name]) return DEVICE_NAMES[name];
+  const digit = /^kpn(\d)_shiftn\1$/.exec(name)?.[1];
+  if (digit) return `Keypad ${digit} / ${SHIFTED_DIGITS[Number(digit)]}`;
+  return /^[a-z0-9_]+$/.test(name) ? name.split("_").map(w => w[0].toUpperCase() + w.slice(1)).join(" ") : name;
+}
+
+/** The Behavior list for a Select: readable names, grouped, in a fixed order. */
+export function behaviorOptions(behaviors: GetBehaviorDetailsResponse[]) {
+  const place = (label: string) => {
+    const group = BEHAVIOR_GROUPS.findIndex(([, list]) => list.includes(label));
+    return group < 0 ? { group: BEHAVIOR_GROUPS.length, order: 0 } : { group, order: BEHAVIOR_GROUPS[group][1].indexOf(label) };
+  };
+  return behaviors.map(b => {
+    const label = behaviorName(b.displayName || "Behavior #" + b.id);
+    return { value: String(b.id), label, ...place(label) };
+  }).sort((a, b) => a.group - b.group || a.order - b.order || a.label.localeCompare(b.label, undefined, { numeric: true }))
+    .map(({ value, label, group }) => ({ value, label, group: BEHAVIOR_GROUPS[group]?.[0] ?? CUSTOM_GROUP }));
+}
+
 /** The value fields a behavior asks for, read from the metadata the firmware reports. */
 export function paramFields(b: GetBehaviorDetailsResponse | undefined, binding: BehaviorBinding, layers: Layer[]): ParamField[] {
   if (!b) return [];
