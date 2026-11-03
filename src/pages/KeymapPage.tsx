@@ -205,7 +205,7 @@ function Inspector({ locked, layer, selected, count, onSelect, children }: {
     <div className="key-header">
       <span className="t-caption muted">KEY</span>
       <div className="key-row">
-        <span className="t-display">{positionName(selected)}</span>
+        <span className="t-display-mono">{positionName(selected)}</span>
         <span className="key-steppers">
           <button className="icon-mini" aria-label="Previous key" onClick={() => onSelect((selected + count - 1) % count)}><Icon name="chevronLeft" /></button>
           <button className="icon-mini" aria-label="Next key" onClick={() => onSelect((selected + 1) % count)}><Icon name="chevronRight" /></button>

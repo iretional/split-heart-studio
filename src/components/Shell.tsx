@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from "react";
 import type { Studio } from "../studio/useStudio";
-import { Icon } from "./Icon";
+import { Icon, type IconName } from "./Icon";
 
 export const PAGES = ["keymap", "layers", "settings"] as const;
 export type Page = typeof PAGES[number];
+const PAGE_ICONS: Record<Page, IconName> = { keymap: "caseSensitive", layers: "layers", settings: "settings" };
 
 /** Connection Status component: dot + label on desktop, dot only in the phone top bar. */
 export function ConnectionStatus({ connected, variant }: { connected: boolean; variant: "desktop" | "mobile" }) {
@@ -36,7 +37,7 @@ export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastS
       <nav className={"nav" + (navEnabled ? "" : " disabled")} aria-label="Pages">
         {PAGES.map(p => <button key={p} className={"nav-item t-label" + (page === p ? " active" : "")}
           aria-current={page === p ? "page" : undefined}
-          onClick={() => { onNavigate(p); onClose(); }}>{p.toUpperCase()}</button>)}
+          onClick={() => { onNavigate(p); onClose(); }}><Icon name={PAGE_ICONS[p]} size={20} />{p.toUpperCase()}</button>)}
       </nav>
       <div className="device">
         <span className="t-caption muted">DEVICE</span>

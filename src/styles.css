@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500&family=IBM+Plex+Mono:wght@400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400&display=swap");
 
 /* Color tokens mirror the Figma "Collection 1" variables (Light / Dark modes). */
 :root {
@@ -20,7 +20,7 @@
   /* Spacing tokens mirror the Figma "Spacing" variables. */
   --space-2: 2px; --space-4: 4px; --space-6: 6px; --space-8: 8px; --space-10: 10px; --space-12: 12px; --space-14: 14px; --space-16: 16px; --space-18: 18px; --space-20: 20px; --space-24: 24px; --space-28: 28px; --space-30: 30px; --space-32: 32px; --space-36: 36px; --space-40: 40px; --space-46: 46px; --space-48: 48px; --space-64: 64px; --space-92: 92px;
 
-  --sidebar-w: 184px;
+  --sidebar-w: 220px;
   --topbar-h: 64px;
   --inspector-w: 280px;
 
@@ -51,6 +51,7 @@ h1, h2, p { margin: 0; }
 
 /* Text styles mirror the Figma text styles. */
 .t-display { font-size: 40px; font-weight: 300; letter-spacing: -.02em; line-height: normal; }
+.t-display-mono { font: 300 40px/normal "IBM Plex Mono", ui-monospace, monospace; letter-spacing: -.02em; }
 .t-keymap { font-size: 11px; font-weight: 500; letter-spacing: -.05em; line-height: 1; }
 .t-logo { font-size: 14px; font-weight: 500; letter-spacing: .25em; line-height: 1; }
 .t-body { font-size: 14px; font-weight: 400; line-height: 1.6; }
@@ -95,10 +96,9 @@ h1, h2, p { margin: 0; }
   height: 40px; display: flex; align-items: center; gap: var(--space-18); padding: 0 var(--space-16) 0 var(--space-20); border: 0; border-radius: 2px;
   background: transparent; color: var(--onsurface-variant); text-align: left;
 }
-.nav-item::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--onsurface-muted); }
+.nav-item svg { flex: none; }
 .nav-item:hover { background: var(--surface-hovered); }
 .nav-item.active { background: var(--accent-base); color: var(--onsurface-inverted); }
-.nav-item.active::before { background: var(--onsurface-inverted); }
 .device { margin-top: auto; padding: var(--space-20) 0 0 var(--space-16); display: flex; flex-direction: column; gap: var(--space-4); }
 .meta { margin-top: var(--space-24); padding-left: var(--space-16); display: flex; flex-direction: column; gap: var(--space-2); }
 .drawer-close, .scrim { display: none; }
@@ -474,8 +474,8 @@ a.btn { text-decoration: none; color: inherit; }
 .t-logo { letter-spacing: .2em; }
 
 /* Below sidebar + content max width the sidebar leaves the layout and opens as an overlay from the menu icon. */
-@media (min-width: 1464px) { .topbar-title.with-tabs { display: none; } }
-@media (min-width: 761px) and (max-width: 1463px) {
+@media (min-width: 1500px) { .topbar-title.with-tabs { display: none; } }
+@media (min-width: 761px) and (max-width: 1499.98px) {
   .app { grid-template-columns: minmax(0, 1fr); }
   .sidebar {
     position: fixed; inset: 0 auto 0 0; width: 300px; z-index: 20; padding: var(--space-64) var(--space-20) var(--space-32);
