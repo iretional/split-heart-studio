@@ -7,9 +7,38 @@ type Half = "left" | "right";
 /** Crop of the Figma canvas shown when only one half fits on a phone. */
 const HALF_VIEW: Record<Half, string> = { left: "50 78 425 440", right: "505 78 425 440" };
 
+const KEY_CENTER = KEY_SIZE / 2;
+/** Widest text that fits a key, inside its border. */
+const KEY_TEXT_WIDTH = 44;
+const MAX_CODE = 9;
+
+/** Splits a name at its middle space when it is too long for one line: "Left Ctrl" over two lines. */
+function nameLines(name: string, oneLine: number) {
+  if (name.length <= oneLine || !name.includes(" ")) return [name];
+  const words = name.split(" ");
+  let best = 1, smallest = Infinity;
+  for (let n = 1; n < words.length; n++) {
+    const longest = Math.max(words.slice(0, n).join(" ").length, words.slice(n).join(" ").length);
+    if (longest < smallest) { smallest = longest; best = n; }
+  }
+  return [words.slice(0, best).join(" "), words.slice(best).join(" ")];
+}
+
+/** Text for one key. Lines too wide for the key are squeezed instead of spilling over its border. */
+function KeyLabel({ name, code, compact }: { name: string; code: string; compact?: boolean }) {
+  const charsPerLine = compact ? 5 : 9;
+  const lineHeight = compact ? 20 : 12;
+  const lines = nameLines(name, compact ? 5 : code ? 9 : 8);
+  const shortCode = code.length > MAX_CODE ? code.slice(0, MAX_CODE - 1) + "…" : code;
+  const rows = [...lines.map(text => ({ text, cls: undefined as string | undefined })), ...(shortCode && !compact ? [{ text: shortCode, cls: "key-code" }] : [])];
+  const top = KEY_CENTER - (rows.length - 1) * lineHeight / 2;
+  return <>{rows.map((r, n) => <text key={n} className={r.cls} x={KEY_CENTER} y={top + n * lineHeight} textAnchor="middle" dominantBaseline="central"
+    {...(r.text.length > charsPerLine ? { textLength: KEY_TEXT_WIDTH, lengthAdjust: "spacingAndGlyphs" as const } : {})}>{r.text}</text>)}</>;
+}
+
 /** Split Heart drawn like the Figma canvas: case outline, half labels and L/R badges plus 60 keys. */
-export function SplitHeartMap({ label, state, onSelect, compact, half, width, disabled }: {
-  label: (i: number) => string; state: (i: number) => KeyState; onSelect?: (i: number) => void;
+export function SplitHeartMap({ label, code, hint, state, onSelect, compact, half, width, disabled }: {
+  label: (i: number) => string; code?: (i: number) => string; hint?: (i: number) => string; state: (i: number) => KeyState; onSelect?: (i: number) => void;
   compact?: boolean; half?: Half; width?: number; disabled?: boolean;
 }) {
   const { x, y, width: w, height: h } = CANVAS;
@@ -31,8 +60,9 @@ export function SplitHeartMap({ label, state, onSelect, compact, half, width, di
       const st = state(i), text = label(i);
       return <g key={i} className={"key" + (st === "selected" ? " selected" : st === "transparent" ? " transparent" : "")} transform={keyTransform(i)}
         {...(onSelect && !disabled ? { role: "button", tabIndex: 0, "aria-label": `Position ${i} ${text}`, "aria-pressed": st === "selected", onClick: () => onSelect(i), onKeyDown: onKey(i) } : {})}>
+        {hint?.(i) && <title>{hint(i)}</title>}
         <rect width={KEY_SIZE} height={KEY_SIZE} rx={compact ? 5 : 4} />
-        <text x={KEY_SIZE / 2} y={KEY_SIZE / 2} textAnchor="middle" dominantBaseline="central">{text}</text>
+        <KeyLabel name={text} code={code?.(i) ?? ""} compact={compact} />
       </g>;
     })}
   </svg>;

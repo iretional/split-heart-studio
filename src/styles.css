@@ -157,6 +157,8 @@ h1, h2, p { margin: 0; }
 .key.selected rect { fill: var(--accent-base); stroke: var(--accent-base); stroke-width: 1.5; }
 .key.selected text { fill: var(--onsurface-inverted); }
 .split-heart .key text, .split-heart .half-label, .badge-label { font-size: 11px; }
+.key text.key-code { fill: var(--onsurface-variant); }
+.key.selected text.key-code { fill: var(--surface-variant); }
 .split-heart .half-label { letter-spacing: .04em; }
 .case-dot { fill: var(--onsurface-muted); }
 .canvas-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-12); text-align: center; max-width: 360px; }
@@ -497,7 +499,7 @@ a.btn { text-decoration: none; color: inherit; }
 .keycode-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--outline-strong) transparent; display: flex; flex-direction: column; gap: var(--space-20); }
 .keycode-group { display: flex; flex-direction: column; gap: var(--space-8); }
 .keycode-grid { display: flex; flex-wrap: wrap; gap: var(--space-8); }
-.keycode-grid .keycode { min-width: 66px; height: 60px; flex-direction: column; gap: 0; padding: var(--space-8) var(--space-8) var(--space-6); }
+.keycode-grid .keycode { min-width: 66px; height: 60px; flex-direction: column; gap: 0; padding: var(--space-6) var(--space-8); }
 .keycode-name { color: var(--onsurface-variant); white-space: nowrap; }
 .keycode.selected .keycode-name { color: var(--surface-variant); }
 .keycode.selected { background: var(--accent-base); border-color: var(--accent-base); color: var(--surface-base); }

@@ -96,7 +96,7 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
           <div className="panel-head"><span className="t-caption muted">PREVIEW</span>
             <span className="t-caption muted">{countText(layer, names)}  ·  ▽ falls through to the layer below</span></div>
           <div className="preview-map"><SplitHeartMap compact width={605}
-            label={i => keyText(i, layer.bindings[i], names, prefs.keyLabels)}
+            label={i => keyText(i, layer.bindings[i], names, prefs.keyLabels, layers)}
             state={i => isTransparent(layer.bindings[i], names) ? "transparent" : "default"} /></div>
         </div>
         <div className="activated">
