@@ -2029,7 +2029,7 @@ a.btn {
   z-index: 1;
   height: 40px;
   background: var(--surface-base);
-  border-bottom: 1px solid var(--outline-strong);
+  border-bottom: 1px solid var(--outline-base);
 }
 /* The Key and ZMK code columns are as wide as what they hold, and the last column takes the rest. */
 .keycode-table .col-1,
