@@ -3719,6 +3719,7 @@ button[data-fx-glitch] > :not(.btn-band) {
   .discard-action.active:hover { background: var(--status-danger); color: var(--onsurface-inverted); }
   .save-action:disabled,
   .discard-action:disabled { background: transparent; color: var(--onsurface-muted); }
-  .discard-action:disabled svg { opacity: 0.4; }
+  /* The check is drawn heavier everywhere else; here it matches the icons beside it. */
+  .save-action svg path { stroke-width: 1.5; }
 }
 .popover button { display: flex; align-items: center; gap: var(--space-8); white-space: nowrap; }
