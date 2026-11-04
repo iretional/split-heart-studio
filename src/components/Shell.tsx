@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Studio } from "../studio/useStudio";
 import { Icon, type IconName } from "./Icon";
 import { Overlay, useOverlay } from "./Overlay";
+import { useFullscreen } from "./useFullscreen";
 import { useHoverSelectFx } from "./useHoverSelectFx";
 
 export const PAGES = ["keymap", "layers", "settings", "motion"] as const;
@@ -33,6 +34,7 @@ export const syncText = (d: Date | null) => d
 export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastSync, open, onClose }: SidebarProps) {
   const fx = useHoverSelectFx<Page>();
   const stage = useOverlay(open);
+  const fullscreen = useFullscreen();
   return <>
     <Overlay open={open}><div className="scrim drawer-scrim" onClick={onClose} /></Overlay>
     <aside className={"sidebar" + (open ? " open" : "") + (stage ? " overlay-" + stage : "")}>
@@ -54,6 +56,8 @@ export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastS
           </button>;
         })}
       </nav>
+      {fullscreen.supported && <button className="fullscreen-toggle mobile-only t-caption" aria-pressed={fullscreen.active} onClick={fullscreen.toggle}>
+        <Icon name={fullscreen.active ? "fullscreenExit" : "fullscreen"} size={14} />{fullscreen.active ? "Exit fullscreen" : "Fullscreen"}</button>}
       <div className="device">
         <span className="t-caption muted">DEVICE</span>
         <span className="t-body-strong">{connected ? device : "No keyboard"}</span>

@@ -3723,3 +3723,18 @@ button[data-fx-glitch] > :not(.btn-band) {
   .save-action svg path { stroke-width: 1.5; }
 }
 .popover button { display: flex; align-items: center; gap: var(--space-8); white-space: nowrap; }
+@media (max-width: 760.98px) {
+  /* Pushed down with the device block it sits on, and kept faint so it stays out of the way. */
+  .fullscreen-toggle {
+    margin-top: auto;
+    align-self: flex-start;
+    align-items: center;
+    gap: var(--space-6);
+    padding: var(--space-6) var(--space-8) var(--space-6) var(--space-16);
+    border: 0;
+    background: transparent;
+    color: var(--onsurface-muted);
+    opacity: 0.6;
+  }
+  .fullscreen-toggle + .device { margin-top: 0; }
+}
