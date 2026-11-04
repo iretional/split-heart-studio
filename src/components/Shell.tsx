@@ -129,7 +129,6 @@ function ConnectionSheet({ studio, onClose }: { studio: Studio; onClose: () => v
   return <>
     <div className="scrim" onClick={onClose} />
     <div className="connection-sheet" role="dialog" aria-label="Connection">
-      <div className="sheet-handle" />
       <div className="connection-head"><span className="t-body-strong">Connection</span><ConnectionStatus connected={connected} variant="desktop" /></div>
       <div className="connection-row"><span className="t-body variant">Keyboard</span><span className="t-body-strong">{connected ? device : "None"}</span></div>
       <div className="connection-row"><span className="t-body variant">Link</span><span className="t-body-strong">{transport === "usb" ? "USB serial" : "Bluetooth"}</span></div>

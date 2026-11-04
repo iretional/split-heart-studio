@@ -1,8 +1,9 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { reducedMotion } from "./useHoverSelectFx";
 
-/** A little longer than --fx-overlay, because the animation starts on the frame after the timer. */
-const OVERLAY_MS = 320;
+/** A little longer than --fx-overlay-in and -out, because the animation starts on the frame after the timer. */
+const ENTER_MS = 110;
+const EXIT_MS = 320;
 const BLOCKED = ["keydown", "pointerdown", "mousedown", "click"];
 
 const block = (e: Event) => { e.preventDefault(); e.stopImmediatePropagation(); };
@@ -34,7 +35,7 @@ export function useOverlay(open: boolean): OverlayStage {
   useLayoutEffect(() => {
     if (stage !== "in" && stage !== "out") return;
     lockInput();
-    const timer = setTimeout(() => setStage(stage === "in" ? "open" : null), OVERLAY_MS);
+    const timer = setTimeout(() => setStage(stage === "in" ? "open" : null), stage === "in" ? ENTER_MS : EXIT_MS);
     return () => { clearTimeout(timer); unlockInput(); };
   }, [stage]);
   return stage;

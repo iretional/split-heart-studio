@@ -1681,13 +1681,6 @@ a.btn {
 }
 
 /* Sheets */
-.sheet-handle {
-  width: 36px;
-  height: 4px;
-  margin: 0 auto;
-  border-radius: 2px;
-  background: var(--outline-strong);
-}
 .connection-sheet {
   position: fixed;
   z-index: 50;
@@ -3363,7 +3356,8 @@ a.btn {
   --fx-enter-gap: 7ms;
   --fx-enter-key: 150ms;
   --fx-enter-key-gap: 5ms;
-  --fx-overlay: 300ms;
+  --fx-overlay-in: 90ms;
+  --fx-overlay-out: 300ms;
   --fx-layer: 200ms;
 }
 .fx-band-1 {
@@ -3593,10 +3587,10 @@ button[data-fx-glitch] > :not(.btn-band) {
 
 /* Overlays come down from above as they appear and keep going down as they leave; a scrim only fades. */
 .overlay-stage { display: contents; }
-.overlay-in > .scrim { animation: overlay-fade-in var(--fx-overlay) ease-out both; }
-.overlay-out > .scrim { animation: overlay-fade-out var(--fx-overlay) ease-in both; }
-.overlay-in > :not(.scrim) { animation: overlay-in var(--fx-overlay) ease-out both; }
-.overlay-out > :not(.scrim) { animation: overlay-out var(--fx-overlay) ease-in both; }
+.overlay-in > .scrim { animation: overlay-fade-in var(--fx-overlay-in) ease-out both; }
+.overlay-out > .scrim { animation: overlay-fade-out var(--fx-overlay-out) ease-in both; }
+.overlay-in > :not(.scrim) { animation: overlay-in var(--fx-overlay-in) ease-out both; }
+.overlay-out > :not(.scrim) { animation: overlay-out var(--fx-overlay-out) ease-in both; }
 /* No hover or press on anything until the overlay has finished moving. */
 .overlay-lock * { pointer-events: none !important; }
 @keyframes overlay-fade-in { from { opacity: 0; } }
@@ -3608,8 +3602,8 @@ button[data-fx-glitch] > :not(.btn-band) {
 @media (max-width: 1499.98px) {
   .sidebar { visibility: hidden; transition: none; }
   .sidebar.open, .sidebar.overlay-out { visibility: visible; transform: none; }
-  .sidebar.overlay-in { animation: overlay-in var(--fx-overlay) ease-out both; }
-  .sidebar.overlay-out { animation: overlay-out var(--fx-overlay) ease-in both; }
+  .sidebar.overlay-in { animation: overlay-in var(--fx-overlay-in) ease-out both; }
+  .sidebar.overlay-out { animation: overlay-out var(--fx-overlay-out) ease-in both; }
 }
 
 /* Page entrance: Blinky element by element, keys Glitch 1 one after another. */
@@ -3673,17 +3667,31 @@ button[data-fx-glitch] > :not(.btn-band) {
 .layer-dialog {
   width: 358px;
   max-height: calc(100dvh - var(--space-32));
-  overflow-y: auto;
+  overflow: hidden;
   gap: var(--space-12);
-  padding: var(--space-20);
+  padding: 0 0 var(--space-20);
 }
+/* Everything but Remove and Done scrolls, so those two stay at the dialog's bottom. */
+.layer-dialog-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-20) var(--space-20) 0;
+}
+.layer-dialog-body > * { flex: none; }
+.layer-dialog .button-row { flex: none; padding: 0 var(--space-20); }
+/* Keeps one half's shape, so the other half never shows beside it. */
 .layer-dialog .key-svg {
   flex: none;
-  width: 292px;
+  width: auto;
+  height: 17.0625rem;
+  aspect-ratio: 425 / 440;
   max-width: 100%;
   align-self: center;
 }
-.layer-dialog .button-row { margin-top: calc(var(--space-4) * -1); }
 .activator-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .layer-dialog .key-svg { overflow: hidden; }
 
@@ -3716,3 +3724,17 @@ button[data-fx-glitch] > :not(.btn-band) {
 .sheet-fields .accordion { grid-column: 1 / -1; }
 .timing-row { display: contents; }
 .accordion .timing-note { margin: calc(var(--space-6) * -1) 0 var(--space-12); }
+
+/* Phone Keymap: the keyboard keeps its size and the Key Sheet scrolls in the space left. */
+@media (max-width: 760.98px) {
+  .canvas { flex: none; }
+  .canvas .key-svg { flex: none; height: 22.125rem; }
+  .canvas .key-svg.split-heart {
+    width: auto;
+    aspect-ratio: 425 / 440;
+    max-width: 100%;
+    align-self: center;
+    overflow: hidden;
+  }
+  .key-sheet { flex: 1; min-height: 0; overflow-y: auto; }
+}

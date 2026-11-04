@@ -140,13 +140,14 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
     <Overlay open={mobile && dialogOpen && !!layer}>{mobile && dialogOpen && layer && <>
       <div className="scrim scrim-blur" onClick={closeDialog} />
       <div className="dialog layer-dialog" role="dialog" aria-modal="true" aria-label={`Layer ${index}`}>
+        <div className="layer-dialog-body">
         <Field label={`LAYER ${index} · NAME`}>
           <label className="input"><input className="t-body-strong" value={nameDraft} maxLength={maxName} placeholder={`Layer ${index}`}
             onChange={e => setNameDraft(e.target.value)} onBlur={commitName} onKeyDown={e => { if (e.key === "Enter") commitName(); }} />
             <span className="t-caption muted">{nameDraft.length} / {maxName}</span></label>
+          <span className="t-caption muted">{countText(layer, names)}</span>
         </Field>
-        <div className="half-switch"><Segmented label="Keyboard half" value={half} options={["Left", "Right"] as const} onChange={setHalf} />
-          <span className="t-caption muted">{countText(layer, names)}</span></div>
+        <div className="half-switch"><Segmented label="Keyboard half" value={half} options={["Left", "Right"] as const} onChange={setHalf} /></div>
         <SplitHeartMap compact half={half === "Left" ? "left" : "right"}
           label={i => keyText(i, layer.bindings[i], names, prefs.keyLabels, layers)}
           icon={i => keyParts(i, layer.bindings[i], names, prefs.keyLabels, layers).icon}
@@ -160,9 +161,6 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
             <button className="link t-label variant" onClick={() => { closeDialog(); onShowKey({ layer: a.layerIndex, key: a.key }); }}>SHOW</button>
           </div>)}
         </div>
-        <div className="button-row even">
-          <button className="btn" disabled={index === 0} onClick={() => move(index - 1)}>Move up</button>
-          <button className="btn" disabled={index === layers.length - 1} onClick={() => move(index + 1)}>Move down</button>
         </div>
         <div className="button-row even">
           <button className="btn btn-danger" disabled={layers.length <= 1} onClick={() => { setDialogOpen(false); void removeLayer(index); }}>Remove</button>

@@ -101,7 +101,6 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
       </section>
       <Inspector locked={locked} layer={layer} selected={selected} count={count} onSelect={setSelected} timing={timing && <HomeRowTiming rows={timing} open />}>{keyFields}</Inspector>
       <section className="key-sheet mobile-only" aria-label="Selected key">
-        <div className="sheet-handle" />
         <div className="sheet-header">
           <span className="key-badge t-body-strong"><GlitchDigits text={selected === null ? "—" : positionName(selected)} /></span>
           <span className="sheet-binding"><span className="t-body-strong">{locked ? "Locked" : binding ? modValue !== null ? keycodeNameOf(modValue) : bindingLabel(binding.behaviorId, binding.param1, binding.param2, names).title : "No key"}</span>
