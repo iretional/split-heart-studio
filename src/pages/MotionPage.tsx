@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { TopBar } from "../components/Shell";
 import { Checkbox, Segmented } from "../components/ui";
 import type { Studio } from "../studio/useStudio";
+import { ShuffleMark } from "../components/ShuffleMark";
 
 type Effect = "blinky" | "glitch" | "glitch-strong" | "glitch-mild" | "trail" | "stroke" | "shuffle" | "crash" | "slide" | "color" | "build";
 
@@ -13,7 +14,7 @@ const EFFECTS: { id: Effect; name: string; frames: number; description: string }
   { id: "glitch-mild", name: "GLITCH 1 MILD", frames: 6, description: "Glitch 1 at half the travel. The app uses this one" },
   { id: "trail", name: "TRAIL", frames: 9, description: "A brightening streak settles into place" },
   { id: "stroke", name: "STROKE-N-FILL", frames: 19, description: "The outline flickers, then it fills" },
-  { id: "shuffle", name: "SHUFFLE", frames: 16, description: "Crossed box, alert, hatching, solid" },
+  { id: "shuffle", name: "SHUFFLE", frames: 16, description: "Crossed box, random mark, hatching, solid" },
   { id: "crash", name: "CRASH-N-BLINK", frames: 16, description: "Lands oversized, shrinks, then blinks" },
   { id: "slide", name: "SLIDE-N-BLINK", frames: 16, description: "Rises from below, then blinks" },
   { id: "color", name: "COLOR FLASH", frames: 17, description: "Runs through colors before settling" },
@@ -43,7 +44,7 @@ function Square({ effect }: { effect: Effect }) {
     case "shuffle":
       return <span className={cls}>
         <span className="m-layer m-shuffle-x" />
-        <span className="m-layer t-display m-shuffle-bang">!</span>
+        <ShuffleMark />
         <span className="m-layer m-shuffle-hatch" />
         <span className="m-layer t-body-strong m-shuffle-face">{TEXT}</span>
       </span>;

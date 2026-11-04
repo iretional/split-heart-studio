@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Layer } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { Icon } from "../components/Icon";
 import { LockBanner, TopBar } from "../components/Shell";
+import { ShuffleMark } from "../components/ShuffleMark";
 import { MiniKeymap, SplitHeartMap } from "../components/SplitHeartMap";
 import { useHoverSelectFx } from "../components/useHoverSelectFx";
 import { DragHandle, Field, Segmented } from "../components/ui";
@@ -84,7 +85,7 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
             <span className="row-more"><Icon name="more" size={16} /></span>
             {i === index && !mobile && rowFx.selecting === i && <span className="fx-shuffle" aria-hidden="true">
               <span className="m-layer m-shuffle-x" />
-              <span className="m-layer t-display m-shuffle-bang">!</span>
+              <ShuffleMark />
               <span className="m-layer m-shuffle-hatch" />
             </span>}
           </div>)}

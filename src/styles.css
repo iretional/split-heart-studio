@@ -3695,3 +3695,12 @@ button[data-fx-glitch] > :not(.btn-band) {
 }
 .tabs.select-tabs .tab { flex: none; border-top: 0; border-bottom-width: 2px; }
 .select-list { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-6); }
+
+/* The Shuffle effect's middle mark: text at Display size, or an icon of the same height. */
+.shuffle-word { font-size: 24px; letter-spacing: 0.08em; }
+.shuffle-icon { width: 1em; height: 1em; display: block; }
+.shuffle-spinner { animation: shuffle-spin calc(var(--m-frame, 40ms) * 8) steps(8) infinite; }
+@keyframes shuffle-spin {
+  to { transform: rotate(360deg); }
+}
+.m-square .shuffle-word { font-size: 16px; }
