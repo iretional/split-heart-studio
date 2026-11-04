@@ -3677,6 +3677,9 @@ button[data-fx-glitch] > :not(.btn-band) {
   }
   /* It doesn't scroll in this size: what doesn't fit is reached by pulling the sheet up. */
   .key-sheet { flex: 1; min-height: 0; overflow: clip; }
+  /* While the sheet is up, a swipe down closes it, so it must not also reload the page. */
+  html:has(.key-sheet.expanded, .key-sheet.floating),
+  html:has(.key-sheet.expanded, .key-sheet.floating) body { overscroll-behavior-y: none; }
   /* Pulled up by its handle, the Key Sheet covers the page. The handle stays reachable while the sheet scrolls. */
   .key-sheet.floating,
   .key-sheet.expanded {

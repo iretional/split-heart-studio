@@ -7,9 +7,9 @@ const TAP_PX = 4;
 const SETTLE_MS = 200;
 /** How far along its travel a drag has to get before the sheet goes the rest of the way. */
 const COMMIT = 0.25;
-/** A finger has to travel this far up, mostly straight, for a swipe to count as scrolling down. */
+/** A finger has to travel this far, mostly straight, for a swipe to count as a scroll. */
 const SWIPE_PX = 56;
-/** Wheel travel that counts as scrolling down. A single mouse wheel notch stays under it. */
+/** Wheel travel that counts as a scroll. A single mouse wheel notch stays under it. */
 const WHEEL_PX = 150;
 /** A pause this long starts the wheel count over, so small scrolls don't add up. */
 const WHEEL_RESET_MS = 200;
@@ -20,9 +20,10 @@ const OWN_GESTURE = ".sheet-handle, input, textarea, select, [draggable=true]";
 /**
  * A bottom sheet that is pulled up by its handle until it covers the screen. At rest it sits in the
  * page's flow; while it moves it floats over the page, because a flow height can't be animated.
- * The page around it can't scroll, so with `scrollOpens` a deliberate scroll down opens the sheet instead.
+ * The page around it can't scroll, so with `scrollMoves` a deliberate scroll down opens the sheet instead.
+ * Once open, a scroll up from the top of its content closes it again.
  */
-export function useSheetDrag<T extends HTMLElement>(scrollOpens = false) {
+export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
   const sheet = useRef<T>(null);
   const [expanded, setExpanded] = useState(false);
   const [floating, setFloating] = useState(false);
@@ -61,41 +62,49 @@ export function useSheetDrag<T extends HTMLElement>(scrollOpens = false) {
   };
 
   useEffect(() => {
-    const page = sheet.current?.parentElement;
-    if (!scrollOpens || expanded || !page) return;
-    const open = () => { if (!drag.current && !sheet.current?.style.transition) settle(true); };
+    const el = sheet.current;
+    const target = expanded ? el : el?.parentElement;
+    if (!scrollMoves || !el || !target) return;
+    const toward = expanded ? -1 : 1;
+    const move = () => { if (!drag.current && !el.style.transition) settle(!expanded); };
+    // An open sheet scrolls its own content first, so it only closes from the top of that content.
+    const atEnd = () => !expanded || el.scrollTop <= 0;
     let swipe: { x: number; y: number } | null = null;
-    let wheeled = 0, lastWheel = 0;
+    let wheeled = 0, lastWheel = 0, wheelCounts = true;
     const onTouchStart = (e: TouchEvent) => {
       const own = e.target instanceof Element && e.target.closest(OWN_GESTURE);
-      swipe = e.touches.length === 1 && !own ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+      swipe = e.touches.length === 1 && !own && atEnd() ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
     };
     const onTouchMove = (e: TouchEvent) => {
       if (!swipe) return;
-      if (e.touches.length !== 1) { swipe = null; return; }
-      const up = swipe.y - e.touches[0].clientY, across = Math.abs(swipe.x - e.touches[0].clientX);
-      if (up < SWIPE_PX || up < across * 2) return;
+      if (e.touches.length !== 1 || !atEnd()) { swipe = null; return; }
+      const along = (swipe.y - e.touches[0].clientY) * toward, across = Math.abs(swipe.x - e.touches[0].clientX);
+      if (along < SWIPE_PX || along < across * 2) return;
       swipe = null;
-      open();
+      move();
     };
     const onWheel = (e: WheelEvent) => {
-      if (e.timeStamp - lastWheel > WHEEL_RESET_MS || e.deltaY <= 0) wheeled = 0;
+      // A wheel that was scrolling the content needs a pause first, or its momentum would close the sheet.
+      if (e.timeStamp - lastWheel > WHEEL_RESET_MS) { wheeled = 0; wheelCounts = true; }
       lastWheel = e.timeStamp;
-      wheeled += Math.max(0, e.deltaY) * (e.deltaMode === WheelEvent.DOM_DELTA_LINE ? LINE_PX : 1);
+      if (!atEnd()) wheelCounts = false;
+      const along = e.deltaY * toward;
+      if (!wheelCounts || along <= 0) { wheeled = 0; return; }
+      wheeled += along * (e.deltaMode === WheelEvent.DOM_DELTA_LINE ? LINE_PX : 1);
       if (wheeled < WHEEL_PX) return;
       wheeled = 0;
-      open();
+      move();
     };
-    page.addEventListener("touchstart", onTouchStart, { passive: true });
-    page.addEventListener("touchmove", onTouchMove, { passive: true });
-    page.addEventListener("wheel", onWheel, { passive: true });
+    target.addEventListener("touchstart", onTouchStart, { passive: true });
+    target.addEventListener("touchmove", onTouchMove, { passive: true });
+    target.addEventListener("wheel", onWheel, { passive: true });
     return () => {
-      page.removeEventListener("touchstart", onTouchStart);
-      page.removeEventListener("touchmove", onTouchMove);
-      page.removeEventListener("wheel", onWheel);
+      target.removeEventListener("touchstart", onTouchStart);
+      target.removeEventListener("touchmove", onTouchMove);
+      target.removeEventListener("wheel", onWheel);
     };
     // settle reads only refs and setters, so an older copy of it behaves the same.
-  }, [scrollOpens, expanded]);
+  }, [scrollMoves, expanded]);
 
   const handle = {
     onPointerDown: (e: PointerEvent<HTMLElement>) => {
