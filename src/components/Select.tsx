@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import { useIsMobile } from "../studio/prefs";
 import { Icon } from "./Icon";
 
 export type SelectOption<T extends string> = { value: T; label: string; group?: string };
@@ -9,7 +10,7 @@ const EDGE = 8;
 const MIN_WIDTH = 220;
 const MAX_HEIGHT = 360;
 
-/** Select component: a list in a floating menu, on the page itself so the panel around it can't clip it. */
+/** Select component: a list in a floating menu, on the page itself so the panel around it can't clip it. Phones show it as an overlay. */
 export function Select<T extends string>({ value, options, onChange, disabled, label }: {
   value: T; options: readonly SelectOption<T>[]; onChange: (v: T) => void; disabled?: boolean; label?: string;
 }) {
@@ -18,6 +19,7 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const id = useId();
+  const mobile = useIsMobile();
   const current = options.findIndex(o => o.value === value);
   const shown = options[current]?.label ?? "";
 
@@ -29,6 +31,7 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
   useLayoutEffect(() => {
     const el = menu.current, field = trigger.current;
     if (!open || !el || !field) return;
+    if (mobile) { el.focus({ preventScroll: true }); return; }
     const r = field.getBoundingClientRect();
     const width = Math.max(r.width, MIN_WIDTH);
     const below = window.innerHeight - r.bottom - GAP - EDGE, above = r.top - GAP - EDGE;
@@ -40,7 +43,7 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
       top: (up ? r.top - GAP - height : r.bottom + GAP) + "px",
     });
     el.focus({ preventScroll: true });
-  }, [open]);
+  }, [open, mobile]);
 
   useLayoutEffect(() => {
     if (open) menu.current?.querySelector(".select-option.active")?.scrollIntoView({ block: "nearest" });
@@ -52,7 +55,8 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
     const onPress = (e: PointerEvent) => { if (!inside(e.target)) setOpen(false); };
     const onScroll = (e: Event) => { if (!inside(e.target)) setOpen(false); };
     const onResize = () => setOpen(false);
-    document.addEventListener("pointerdown", onPress);
+    // The overlay closes from its scrim's click, so the tap can't fall through to what is underneath.
+    if (!mobile) document.addEventListener("pointerdown", onPress);
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onResize);
     return () => {
@@ -60,7 +64,7 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
     };
-  }, [open]);
+  }, [open, mobile]);
 
   const onMenuKey = (e: KeyboardEvent) => {
     const last = options.length - 1;
@@ -83,15 +87,18 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
       onKeyDown={e => { if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); show(); } }}>
       <span className="select-value">{shown}</span><Icon name="chevronDown" size={14} />
     </button>
-    {open && createPortal(<div ref={menu} className="select-menu" role="listbox" tabIndex={-1} aria-label={label} aria-activedescendant={`${id}-${active}`} onKeyDown={onMenuKey}>
-      {options.map((o, i) => <div key={o.value} className="select-row">
-        {o.group && o.group !== options[i - 1]?.group && <span className="select-group t-caption muted">{o.group}</span>}
-        <button id={`${id}-${i}`} type="button" role="option" tabIndex={-1} aria-selected={i === current}
-          className={"select-option t-body" + (i === active ? " active" : "")}
-          onMouseEnter={() => setActive(i)} onMouseDown={e => e.preventDefault()} onClick={() => pick(i)}>
-          <span className="select-value">{o.label}</span>{i === current && <Icon name="check" size={14} />}
-        </button>
-      </div>)}
-    </div>, document.body)}
+    {open && createPortal(<>
+      {mobile && <div className="scrim scrim-blur select-scrim" onClick={hide} />}
+      <div ref={menu} className={"select-menu" + (mobile ? " overlay" : "")} role="listbox" tabIndex={-1} aria-label={label} aria-activedescendant={`${id}-${active}`} onKeyDown={onMenuKey}>
+        {options.map((o, i) => <div key={o.value} className="select-row">
+          {o.group && o.group !== options[i - 1]?.group && <span className="select-group t-caption muted">{o.group}</span>}
+          <button id={`${id}-${i}`} type="button" role="option" tabIndex={-1} aria-selected={i === current}
+            className={"select-option t-body" + (i === active ? " active" : "")}
+            onMouseEnter={() => setActive(i)} onMouseDown={e => e.preventDefault()} onClick={() => pick(i)}>
+            <span className="select-value">{o.label}</span>{i === current && <Icon name="check" size={14} />}
+          </button>
+        </div>)}
+      </div>
+    </>, document.body)}
   </span>;
 }

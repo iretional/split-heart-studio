@@ -60,6 +60,11 @@ export function behaviorName(name: string) {
   return /^[a-z0-9_]+$/.test(name) ? name.split("_").map(w => w[0].toUpperCase() + w.slice(1)).join(" ") : name;
 }
 
+/** What a keymap's own keypad behaviors show on a key: what they type, not their long name. */
+export function behaviorKeySymbol(name: string) {
+  return /^kpn(\d)_shiftn\1$/.exec(name)?.[1] ?? { kpminus_under: "-", kpplus_equal: "+" }[name];
+}
+
 /** The Behavior list for a Select: readable names, grouped, in a fixed order. */
 export function behaviorOptions(behaviors: GetBehaviorDetailsResponse[]) {
   const place = (label: string) => {

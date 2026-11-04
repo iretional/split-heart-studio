@@ -1877,12 +1877,6 @@ a.btn {
   .layer-row .row-more {
     margin-left: auto;
   }
-  .selected-layer {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-12);
-    flex: none;
-  }
   .layer-detail {
     display: none;
   }
@@ -3656,3 +3650,32 @@ button[data-fx-glitch] > :not(.btn-band) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Phones: the Select list opens as an overlay in the same box as the Keycode Dialog, not on top of its field. */
+.select-scrim { z-index: 55; }
+.select-menu.overlay {
+  inset: var(--space-16);
+  height: fit-content;
+  max-height: calc(100dvh - var(--space-32));
+  margin-block: auto;
+  border: 0;
+  border-radius: 8px;
+}
+
+/* Phones: a layer's details open in a dialog from its row. */
+.layer-dialog {
+  width: 358px;
+  max-height: calc(100dvh - var(--space-32));
+  overflow-y: auto;
+  gap: var(--space-12);
+  padding: var(--space-20);
+}
+.layer-dialog .key-svg {
+  flex: none;
+  width: 292px;
+  max-width: 100%;
+  align-self: center;
+}
+.layer-dialog .button-row { margin-top: calc(var(--space-4) * -1); }
+.activator-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.layer-dialog .key-svg { overflow: hidden; }

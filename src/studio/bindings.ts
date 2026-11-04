@@ -1,6 +1,7 @@
 import type { BehaviorBinding, Layer } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import type { IconName } from "../components/Icon";
-import { bindingLabel, keycodeForUsage, keycodeText } from "../keyLabels";
+import { bindingLabel, implicitMods, keycodeForUsage, keycodeText } from "../keyLabels";
+import { behaviorKeySymbol, behaviorName } from "./behaviors";
 import { positionName } from "./splitHeartGeometry";
 import type { KeyLabelMode } from "./prefs";
 
@@ -16,6 +17,9 @@ export const countText = (layer: Layer, names: Record<number, string>) => {
   const { bound, transparent } = layerCounts(layer, names);
   return `${bound} bound · ${transparent} transparent`;
 };
+
+/** Real keycodes carry a usage page in their upper bits; layer numbers and option indexes don't. */
+const isKeycode = (param: number) => (param & 0xffffff) >>> 16 !== 0 && !!keycodeForUsage(param);
 
 const LAYER_CODES: [RegExp, string][] = [[/momentary/, "MO"], [/toggle layer/, "TG"], [/to layer/, "TO"], [/sticky layer/, "SL"]];
 
@@ -34,12 +38,18 @@ export function keyParts(i: number, b: BehaviorBinding | undefined, names: Recor
     const shown = index < 0 ? b.param1 : index;
     return { name: layer ? layer.name || "Layer " + index : "Layer " + shown, code, hint: `${behavior} (${layerCode} ${shown})` };
   }
-  const tapKey = lower.includes("tap") && (lower.includes("hold") || lower.includes("mod") || lower.includes("layer"));
+  const shown = behaviorName(behavior);
+  // A keymap's own hold-taps (home row mods) have any name, so a keycode in the second parameter is what marks them.
+  const tapKey = (lower.includes("tap") && (lower.includes("hold") || lower.includes("mod") || lower.includes("layer"))) || isKeycode(b.param2);
   const isKey = tapKey || lower.includes("key press") || lower === "kp" || lower.includes("key toggle") || lower.includes("sticky key");
-  const key = isKey ? keycodeForUsage(tapKey ? b.param2 : b.param1) : undefined;
-  if (!key) return { name: bindingLabel(b.behaviorId, b.param1, b.param2, names).title, code, hint: behavior };
-  const prefix = lower.includes("key press") ? "" : behavior + ": ";
-  return { name: key.symbol, icon: key.icon, code, hint: `${prefix}${keycodeText(key)} (${key.zmk})\n${key.description}` };
+  const value = tapKey ? b.param2 : b.param1;
+  const key = isKey ? keycodeForUsage(value) : undefined;
+  if (!key) return { name: behaviorKeySymbol(behavior) ?? (shown !== behavior ? shown : bindingLabel(b.behaviorId, b.param1, b.param2, names).title), code, hint: shown };
+  const hold = tapKey && isKeycode(b.param1) ? keycodeForUsage(b.param1) : undefined;
+  const prefix = lower.includes("key press") ? "" : shown + ": " + (hold ? `hold ${keycodeText(hold)}, tap ` : "");
+  const mods = implicitMods(value);
+  return { name: mods.length ? `${mods.join("+")} ${key.symbol}` : key.symbol, icon: mods.length ? undefined : key.icon, code,
+    hint: `${prefix}${mods.map(m => m + " + ").join("")}${keycodeText(key)} (${key.zmk})\n${key.description}` };
 }
 
 export const keyText = (i: number, b: BehaviorBinding | undefined, names: Record<number, string>, mode: KeyLabelMode = "Keycode", layers: Layer[] = []) =>

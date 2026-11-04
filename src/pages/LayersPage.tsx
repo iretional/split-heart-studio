@@ -4,9 +4,9 @@ import { Icon } from "../components/Icon";
 import { LockBanner, TopBar } from "../components/Shell";
 import { MiniKeymap, SplitHeartMap } from "../components/SplitHeartMap";
 import { useHoverSelectFx } from "../components/useHoverSelectFx";
-import { DragHandle, Field } from "../components/ui";
+import { DragHandle, Field, Segmented } from "../components/ui";
 import { countText, isTransparent, keyParts, keyText } from "../studio/bindings";
-import type { Prefs } from "../studio/prefs";
+import { useIsMobile, type Prefs } from "../studio/prefs";
 import type { Studio } from "../studio/useStudio";
 import type { KeyFocus } from "./KeymapPage";
 
@@ -31,6 +31,9 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
   const [selected, setSelected] = useState(0);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const rowFx = useHoverSelectFx<number>();
+  const mobile = useIsMobile();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [half, setHalf] = useState<"Left" | "Right">("Left");
   const layers = keymap?.layers ?? [];
   const index = Math.min(selected, Math.max(0, layers.length - 1));
   const layer = layers[index];
@@ -39,7 +42,14 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
   const [nameDraft, setNameDraft] = useState("");
   useEffect(() => setNameDraft(layer?.name ?? ""), [layer?.id, layer?.name]);
   const commitName = () => { if (layer && nameDraft !== layer.name) void renameLayer(layer.id, nameDraft); };
-  const pick = (i: number) => { if (i !== index) rowFx.select(i); setSelected(i); };
+  const pick = (i: number) => { if (i !== index) rowFx.select(i); setSelected(i); if (mobile) setDialogOpen(true); };
+  const closeDialog = () => { commitName(); setDialogOpen(false); };
+  useEffect(() => {
+    if (!dialogOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDialogOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dialogOpen]);
   const move = (to: number) => { if (to >= 0 && to < layers.length) { void moveLayer(index, to); setSelected(to); } };
   const addDisabled = !keymap || (keymap.availableLayers ?? 0) <= 0;
   const list = activators(layers, layer ?? { id: -1, name: "", bindings: [] }, index, names);
@@ -59,7 +69,7 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
         </div>
         <div className="rows">
           {layers.map((l, i) => <div key={l.id} role="button" tabIndex={0}
-            className={"layer-row" + (i === index ? " selected" : "") + (rowFx.hovering === i ? " fx-hover" : "") + (i === index && rowFx.selecting === i ? " fx-select" : "")}
+            className={"layer-row" + (i === index && !mobile ? " selected" : "") + (rowFx.hovering === i ? " fx-hover" : "") + (i === index && !mobile && rowFx.selecting === i ? " fx-select" : "")}
             onMouseEnter={() => { if (i !== index) rowFx.enter(i); }} onMouseLeave={() => rowFx.leave(i)}
             onAnimationEnd={e => { if (e.animationName === "fx-layer-box") rowFx.selectEnd(); }}
             onClick={() => pick(i)}
@@ -72,7 +82,7 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
             <span className="layer-text"><span className="t-body-strong layer-name">{layerName(l, i)}</span><span className="t-caption muted">{countText(l, names)}</span></span>
             <span className="desktop-only"><MiniKeymap bound={k => !isTransparent(l.bindings[k], names)} /></span>
             <span className="row-more"><Icon name="more" size={16} /></span>
-            {i === index && rowFx.selecting === i && <span className="fx-shuffle" aria-hidden="true">
+            {i === index && !mobile && rowFx.selecting === i && <span className="fx-shuffle" aria-hidden="true">
               <span className="m-layer m-shuffle-x" />
               <span className="m-layer t-display m-shuffle-bang">!</span>
               <span className="m-layer m-shuffle-hatch" />
@@ -87,6 +97,7 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
           </div>)}
         </div>
         <span className="list-hint t-caption muted desktop-only">Drag a handle to reorder. Changes reach the keyboard only after Save.</span>
+        <span className="t-caption muted mobile-only">Tap a layer to edit it. Changes reach the keyboard only after Save.</span>
       </section>
 
       {layer ? <section className="layer-detail desktop-only">
@@ -123,15 +134,39 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
         </div>
       </section> : <section className="layer-detail desktop-only canvas-empty"><p className="t-body-strong">{locked ? "Unlock to load layers" : "Loading layers…"}</p></section>}
 
-      {layer && <section className="panel selected-layer mobile-only">
-        <div className="panel-head"><span className="t-caption muted">LAYER {index} · {layerName(layer, index).toUpperCase()}</span><span className="t-caption muted">▽ = falls through</span></div>
-        <MiniKeymap fluid bound={k => !isTransparent(layer.bindings[k], names)} />
-        <div className="button-row even">
-          <button className="btn" onClick={() => { const n = window.prompt("Layer name", layer.name); if (n !== null) void renameLayer(layer.id, n.slice(0, maxName)); }}>Rename</button>
-          <button className="btn" disabled={layers.length <= 1} onClick={() => move(index > 0 ? index - 1 : index + 1)}>Move</button>
-          <button className="btn btn-danger" disabled={layers.length <= 1} onClick={() => void removeLayer(index)}>Remove</button>
-        </div>
-      </section>}
     </div>
+    {mobile && dialogOpen && layer && <>
+      <div className="scrim scrim-blur" onClick={closeDialog} />
+      <div className="dialog layer-dialog" role="dialog" aria-modal="true" aria-label={`Layer ${index}`}>
+        <Field label={`LAYER ${index} · NAME`}>
+          <label className="input"><input className="t-body-strong" value={nameDraft} maxLength={maxName} placeholder={`Layer ${index}`}
+            onChange={e => setNameDraft(e.target.value)} onBlur={commitName} onKeyDown={e => { if (e.key === "Enter") commitName(); }} />
+            <span className="t-caption muted">{nameDraft.length} / {maxName}</span></label>
+        </Field>
+        <div className="half-switch"><Segmented label="Keyboard half" value={half} options={["Left", "Right"] as const} onChange={setHalf} />
+          <span className="t-caption muted">{countText(layer, names)}</span></div>
+        <SplitHeartMap compact half={half === "Left" ? "left" : "right"}
+          label={i => keyText(i, layer.bindings[i], names, prefs.keyLabels, layers)}
+          icon={i => keyParts(i, layer.bindings[i], names, prefs.keyLabels, layers).icon}
+          state={i => isTransparent(layer.bindings[i], names) ? "transparent" : "default"} />
+        <div className="activated">
+          <span className="t-caption muted">ACTIVATED BY</span>
+          {list.length === 0 && <p className="t-caption muted activator-empty">No key switches to this layer.</p>}
+          {list.map(a => <div key={a.layerIndex + "-" + a.key} className="activator">
+            <span className="chip t-label">{a.chip}</span>
+            <span className="activator-text"><span className="t-body">Key {a.key} on {a.layerLabel}</span><span className="t-caption muted">{a.hint}</span></span>
+            <button className="link t-label variant" onClick={() => { closeDialog(); onShowKey({ layer: a.layerIndex, key: a.key }); }}>SHOW</button>
+          </div>)}
+        </div>
+        <div className="button-row even">
+          <button className="btn" disabled={index === 0} onClick={() => move(index - 1)}>Move up</button>
+          <button className="btn" disabled={index === layers.length - 1} onClick={() => move(index + 1)}>Move down</button>
+        </div>
+        <div className="button-row even">
+          <button className="btn btn-danger" disabled={layers.length <= 1} onClick={() => { setDialogOpen(false); void removeLayer(index); }}>Remove</button>
+          <button className="btn btn-primary" onClick={closeDialog}>Done</button>
+        </div>
+      </div>
+    </>}
   </>;
 }
