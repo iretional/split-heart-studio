@@ -14,6 +14,7 @@ import { Checkbox, Segmented } from "../components/ui";
 import { bindingLabel, implicitMods, keyboardUsageLabel, keycodeForUsage, keycodeText, toggleMod, withKeptMods } from "../keyLabels";
 import { behaviorId, isTransparent, keyParts } from "../studio/bindings";
 import { behaviorName, behaviorOptions, defaultBinding, paramFields, type ParamField } from "../studio/behaviors";
+import { homeRowKey, homeRowTiming } from "../studio/homeRow";
 import { useIsMobile, type Prefs } from "../studio/prefs";
 import { SPLIT_HEART_KEY_COUNT, isLeftKey, positionName } from "../studio/splitHeartGeometry";
 import type { Studio } from "../studio/useStudio";
@@ -46,6 +47,8 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const modField = [...fields].reverse().find(f => f.kind === "hid");
   const modValue = binding && modField ? (modField.which === 1 ? binding.param1 : binding.param2) : null;
   const mods = modValue !== null ? implicitMods(modValue) : [];
+  // A hold-tap's modifier is its hold key, so "no modifiers" would be wrong about it.
+  const holdField = fields.length === 2 && fields.every(f => f.kind === "hid") ? fields[0] : undefined;
   const count = layout?.keys.length ?? SPLIT_HEART_KEY_COUNT;
   const isSplitHeart = !layout || layout.keys.length === SPLIT_HEART_KEY_COUNT;
   const none = behaviorId(names, /^none/i);
@@ -60,6 +63,12 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   /** Firmware rejects keycode 0, so clearing a key means binding it to None. */
   const clearKey = () => { if (none) write({ behaviorId: Number(none), param1: 0, param2: 0 }); };
   const toggleModifier = (name: string) => { if (modField && modValue !== null) setParam(modField.which, toggleMod(modValue, name)); };
+
+  const stock = isSplitHeart && layer && selected !== null ? homeRowKey(layer.id, selected) : undefined;
+  const stockBehavior = stock && behaviors.find(b => b.displayName === stock.behavior);
+  const changed = !!binding && !!stock && !!stockBehavior && (binding.behaviorId !== stockBehavior.id || binding.param1 !== stock.hold || binding.param2 !== stock.tap);
+  const restoreHomeRow = () => { if (stock && stockBehavior) write({ behaviorId: stockBehavior.id, param1: stock.hold, param2: stock.tap }); };
+  const timing = isSplitHeart && binding ? homeRowTiming(names[binding.behaviorId]) : null;
 
   const tabs = <div className="tabs layer-tabs" role="tablist" aria-label="Layers">
     {keymap ? keymap.layers.map((l, i) => {
@@ -81,7 +90,8 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const step = (d: number) => setSelected(s => ((s ?? 0) + d + count) % count);
   const pickingValue = binding && picking ? (picking === 1 ? binding.param1 : binding.param2) : 0;
   const keyFields = binding && <KeyFields binding={binding} names={names} behavior={behavior} behaviors={behaviors} fields={fields} showMods={!!modField} mods={mods} canClear={!!none}
-    onBehavior={changeBehavior} onParam={setParam} onPick={setPicking} onToggleMod={toggleModifier} onClear={clearKey} />;
+    onBehavior={changeBehavior} onParam={setParam} onPick={setPicking} onToggleMod={toggleModifier} onClear={clearKey}
+    restore={changed && stock ? `Your keymap has this key as hold ${keycodeNameOf(stock.hold)}, tap ${keycodeNameOf(stock.tap)}.` : null} onRestore={restoreHomeRow} />;
 
   return <>
     <TopBar title="Keymap" subtitle={studio.device} tabs={tabs} studio={studio} onMenu={onMenu} />
@@ -94,19 +104,19 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
           ? <SplitHeartMap enterView={tabKey} half={mobile ? (half === "Left" ? "left" : "right") : undefined} disabled={locked} label={i => parts(i).name} icon={i => parts(i).icon} code={i => parts(i).code} hint={i => parts(i).hint} state={state} onSelect={setSelected} />
           : layer && layout && <KeyboardSvg keys={layout.keys} layer={layer} names={names} selected={selected} onSelect={setSelected} />}
       </section>
-      <Inspector locked={locked} layer={layer} selected={selected} count={count} onSelect={setSelected}>{keyFields}</Inspector>
+      <Inspector locked={locked} layer={layer} selected={selected} count={count} onSelect={setSelected} timing={timing && <HomeRowTiming rows={timing} open />}>{keyFields}</Inspector>
       <section className="key-sheet mobile-only" aria-label="Selected key">
         <div className="sheet-handle" />
         <div className="sheet-header">
           <span className="key-badge t-body-strong"><GlitchDigits text={selected === null ? "—" : positionName(selected)} /></span>
           <span className="sheet-binding"><span className="t-body-strong">{locked ? "Locked" : binding ? modValue !== null ? keycodeNameOf(modValue) : bindingLabel(binding.behaviorId, binding.param1, binding.param2, names).title : "No key"}</span>
-            <span className="t-caption muted">{locked ? "Unlock on the keyboard to edit" : binding ? bindingSummary(behavior, mods) : ""}</span></span>
+            <span className="t-caption muted">{locked ? "Unlock on the keyboard to edit" : binding ? holdField ? `${behavior} · hold ${keycodeNameOf(holdField.which === 1 ? binding.param1 : binding.param2)}` : bindingSummary(behavior, mods) : ""}</span></span>
           <span className="prev-next">
             <button className="btn square" aria-label="Previous key" onClick={() => step(-1)}><Icon name="chevronLeft" /></button>
             <button className="btn square" aria-label="Next key" onClick={() => step(1)}><Icon name="chevronRight" /></button>
           </span>
         </div>
-        {!locked && keyFields && <div className={"sheet-fields" + (fields.length === 1 ? " paired" : "")}>{keyFields}</div>}
+        {!locked && keyFields && <div className={"sheet-fields" + (fields.length === 1 ? " paired" : "")}>{keyFields}{timing && <div className="accordion"><HomeRowTiming rows={timing} /></div>}</div>}
       </section>
     </div>
     <Overlay open={!!picking && !!binding && selected !== null && !!layer}>{picking && binding && selected !== null && layer && <KeycodeDialog target={`Key ${positionName(selected)} · ${layer.name || "Layer " + layerIndex}`} current={pickingValue}
@@ -179,10 +189,10 @@ function KeyboardSvg({ keys, layer, names, selected, onSelect }: {
 // --- Inspector -------------------------------------------------------------
 
 /** Behavior, its value fields and modifiers. The Inspector and the phone Key Sheet show the same controls. */
-function KeyFields({ binding, names, behavior, behaviors, fields, showMods, mods, canClear, onBehavior, onParam, onPick, onToggleMod, onClear }: {
+function KeyFields({ binding, names, behavior, behaviors, fields, showMods, mods, canClear, onBehavior, onParam, onPick, onToggleMod, onClear, restore, onRestore }: {
   binding: BehaviorBinding; names: Record<number, string>; behavior: string; behaviors: GetBehaviorDetailsResponse[]; fields: ParamField[]; showMods: boolean; mods: string[]; canClear: boolean;
   onBehavior: (id: string) => void; onParam: (which: 1 | 2, value: number) => void; onPick: (which: 1 | 2) => void;
-  onToggleMod: (m: string) => void; onClear: () => void;
+  onToggleMod: (m: string) => void; onClear: () => void; restore: string | null; onRestore: () => void;
 }) {
   const value = (which: 1 | 2) => which === 1 ? binding.param1 : binding.param2;
   const usageText = (v: number) => { const c = keycodeForUsage(v); return c ? keycodeText(c) : keyboardUsageLabel(v) ?? bindingLabel(binding.behaviorId, v, v, names).title; };
@@ -199,11 +209,23 @@ function KeyFields({ binding, names, behavior, behaviors, fields, showMods, mods
     </div>)}
     {showMods && <div className="field field-mods"><span className="t-caption muted">MODIFIERS</span>
       <div className="mods">{MODS.map(m => <Checkbox key={m} label={m} checked={mods.includes(m)} onChange={() => onToggleMod(m)} />)}</div></div>}
+    {restore && <div className="field home-row-restore"><span className="t-caption muted">HOME ROW</span>
+      <p className="t-caption muted">{restore}</p>
+      <button className="btn btn-block" onClick={onRestore}>Restore home row</button></div>}
   </>;
 }
 
-function Inspector({ locked, layer, selected, count, onSelect, children }: {
-  locked: boolean; layer?: Layer; selected: number | null; count: number; onSelect: (i: number) => void; children: ReactNode;
+/** A home row key's settings. They live in the firmware, so this only shows them. */
+function HomeRowTiming({ rows, open }: { rows: [string, string][]; open?: boolean }) {
+  return <details open={open}>
+    <summary className="t-caption">TIMING <Icon name="chevronRight" size={12} /></summary>
+    <dl className="t-caption">{rows.map(([name, value]) => <div key={name} className="timing-row"><dt className="muted">{name}</dt><dd>{value}</dd></div>)}</dl>
+    <p className="t-caption muted timing-note">Set in firmware. Change them in zmk-config and rebuild.</p>
+  </details>;
+}
+
+function Inspector({ locked, layer, selected, count, onSelect, timing, children }: {
+  locked: boolean; layer?: Layer; selected: number | null; count: number; onSelect: (i: number) => void; timing?: ReactNode; children: ReactNode;
 }) {
   if (locked) return <aside className="inspector empty">
     <span className="ring"><Icon name="lock" size={20} /></span>
@@ -229,6 +251,7 @@ function Inspector({ locked, layer, selected, count, onSelect, children }: {
     </div>
     {children}
     <div className="accordion">
+      {timing}
       <details>
         <summary className="t-caption">ADVANCED <Icon name="chevronRight" size={12} /></summary>
         <dl className="t-caption">
