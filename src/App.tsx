@@ -35,6 +35,8 @@ export default function App() {
   const [focus, setFocus] = useState<KeyFocus | null>(null);
   const onMenu = () => setMenuOpen(true);
   const showKey = (f: KeyFocus) => { setFocus(f); navigate("keymap"); };
+  // A SHOW jump applies once: coming back to Keymap later starts from the first key again.
+  useEffect(() => { if (page !== "keymap") setFocus(null); }, [page]);
   const view = page === "motion" ? page : studio.connected ? page : "connect";
   const root = useEntrance<HTMLDivElement>(view + (studio.keymap ? ":loaded" : ""));
 
