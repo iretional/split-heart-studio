@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent
 import { createPortal } from "react-dom";
 import { useIsMobile } from "../studio/prefs";
 import { Icon } from "./Icon";
+import { Overlay } from "./Overlay";
 
 export type SelectOption<T extends string> = { value: T; label: string; group?: string };
 
@@ -103,7 +104,7 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
       onKeyDown={e => { if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); show(); } }}>
       <span className="select-value">{shown}</span><Icon name="chevronDown" size={14} />
     </button>
-    {open && createPortal(<>
+    {createPortal(<Overlay open={open}>{open && <>
       {mobile && <div className="scrim scrim-blur select-scrim" onClick={hide} />}
       <div ref={menu} className={"select-menu" + (mobile ? " overlay" : "") + (tabbed ? " tabbed" : "")} role="listbox" tabIndex={-1} aria-label={label} aria-activedescendant={`${id}-${active}`} onKeyDown={onMenuKey}>
         {tabbed && <div className="tabs select-tabs" role="tablist" aria-label={label && `${label} groups`}>
@@ -120,6 +121,6 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
           </div>; })}
         </div>
       </div>
-    </>, document.body)}
+    </>}</Overlay>, document.body)}
   </span>;
 }

@@ -4,6 +4,7 @@ import type { BehaviorBinding, KeyPhysicalAttrs, Layer } from "@zmkfirmware/zmk-
 import { GlitchDigits } from "../components/GlitchDigits";
 import { Icon } from "../components/Icon";
 import { KeycodeDialog } from "../components/KeycodeDialog";
+import { Overlay } from "../components/Overlay";
 import { LockBanner, TopBar } from "../components/Shell";
 import { SplitHeartMap } from "../components/SplitHeartMap";
 import { useEntrance } from "../components/useEntrance";
@@ -97,7 +98,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
       <section className="key-sheet mobile-only" aria-label="Selected key">
         <div className="sheet-handle" />
         <div className="sheet-header">
-          <span className="key-badge t-body-strong">{selected === null ? "—" : positionName(selected)}</span>
+          <span className="key-badge t-body-strong"><GlitchDigits text={selected === null ? "—" : positionName(selected)} /></span>
           <span className="sheet-binding"><span className="t-body-strong">{locked ? "Locked" : binding ? modValue !== null ? keycodeNameOf(modValue) : bindingLabel(binding.behaviorId, binding.param1, binding.param2, names).title : "No key"}</span>
             <span className="t-caption muted">{locked ? "Unlock on the keyboard to edit" : binding ? bindingSummary(behavior, mods) : ""}</span></span>
           <span className="prev-next">
@@ -108,8 +109,8 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
         {!locked && keyFields && <div className={"sheet-fields" + (fields.length === 1 ? " paired" : "")}>{keyFields}</div>}
       </section>
     </div>
-    {picking && binding && selected !== null && layer && <KeycodeDialog target={`Key ${positionName(selected)} · ${layer.name || "Layer " + layerIndex}`} current={pickingValue}
-      onClose={() => setPicking(null)} onPick={u => { setParam(picking, withKeptMods(pickingValue, u)); setPicking(null); }} />}
+    <Overlay open={!!picking && !!binding && selected !== null && !!layer}>{picking && binding && selected !== null && layer && <KeycodeDialog target={`Key ${positionName(selected)} · ${layer.name || "Layer " + layerIndex}`} current={pickingValue}
+      onClose={() => setPicking(null)} onPick={u => { setParam(picking, withKeptMods(pickingValue, u)); setPicking(null); }} />}</Overlay>
     {error && <p className="t-caption danger-text page-error">{error.message}</p>}
   </>;
 }

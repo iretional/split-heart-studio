@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import type { Studio } from "../studio/useStudio";
 import { Icon, type IconName } from "./Icon";
+import { Overlay, useOverlay } from "./Overlay";
 import { useHoverSelectFx } from "./useHoverSelectFx";
 
 export const PAGES = ["keymap", "layers", "settings", "motion"] as const;
@@ -33,9 +34,10 @@ export const syncText = (d: Date | null) => d
 
 export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastSync, open, onClose }: SidebarProps) {
   const fx = useHoverSelectFx<Page>();
+  const stage = useOverlay(open);
   return <>
-    {open && <div className="scrim drawer-scrim" onClick={onClose} />}
-    <aside className={"sidebar" + (open ? " open" : "")}>
+    <Overlay open={open}><div className="scrim drawer-scrim" onClick={onClose} /></Overlay>
+    <aside className={"sidebar" + (open ? " open" : "") + (stage ? " overlay-" + stage : "")}>
       <div className="brand">
         <span className="t-logo">SPLIT STUDIO</span>
         <button className="icon-btn drawer-close" onClick={onClose} aria-label="Close menu"><Icon name="close" size={20} /></button>
@@ -111,14 +113,14 @@ export function TopBar({ title, subtitle, tabs, studio, onMenu, onBack, mobileAc
       <div className="keyboard-select desktop-only"><span className="t-label">{(device || "Split Heart").toUpperCase()}</span><Icon name="chevronDown" size={14} /></div>
       <span className="menu-anchor more-slot mobile-only">
         <button className="icon-btn" aria-label="More" aria-expanded={menu} onClick={() => setMenu(m => !m)}><Icon name="more" size={18} /></button>
-        {menu && <div className="popover card" role="menu" onClick={() => setMenu(false)}>
+        <Overlay open={menu}>{menu && <div className="popover card" role="menu" onClick={() => setMenu(false)}>
           <button role="menuitem" className="t-body" onClick={refresh} disabled={loading || !connected}>Refresh from keyboard</button>
           {unsaved > 0 && <button role="menuitem" className="t-body" onClick={() => void discardChanges()}>Discard changes</button>}
           <button role="menuitem" className="t-body" onClick={disconnect} disabled={!connected}>Disconnect</button>
-        </div>}
+        </div>}</Overlay>
       </span>
     </div>
-    {sheet && <ConnectionSheet studio={studio} onClose={() => setSheet(false)} />}
+    <Overlay open={sheet}>{sheet && <ConnectionSheet studio={studio} onClose={() => setSheet(false)} />}</Overlay>
   </header>;
 }
 

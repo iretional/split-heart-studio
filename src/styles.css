@@ -1136,7 +1136,6 @@ a.btn {
   background: var(--surface-base);
   box-shadow: 0 12px 32px rgb(0 0 0 / 0.15);
   outline: none;
-  animation: m-blinky var(--fx-overlay) step-end backwards;
 }
 .select-row {
   flex: none;
@@ -3364,7 +3363,7 @@ a.btn {
   --fx-enter-gap: 7ms;
   --fx-enter-key: 150ms;
   --fx-enter-key-gap: 5ms;
-  --fx-overlay: 120ms;
+  --fx-overlay: 300ms;
   --fx-layer: 200ms;
 }
 .fx-band-1 {
@@ -3592,11 +3591,25 @@ button[data-fx-glitch] > :not(.btn-band) {
   animation: fx-key-text var(--fx-hover) step-end backwards;
 }
 
-/* Overlays blink in when they open. */
-.dialog,
-.connection-sheet,
-.popover {
-  animation: m-blinky var(--fx-overlay) step-end backwards;
+/* Overlays come down from above as they appear and keep going down as they leave; a scrim only fades. */
+.overlay-stage { display: contents; }
+.overlay-in > .scrim { animation: overlay-fade-in var(--fx-overlay) ease-out both; }
+.overlay-out > .scrim { animation: overlay-fade-out var(--fx-overlay) ease-in both; }
+.overlay-in > :not(.scrim) { animation: overlay-in var(--fx-overlay) ease-out both; }
+.overlay-out > :not(.scrim) { animation: overlay-out var(--fx-overlay) ease-in both; }
+/* No hover or press on anything until the overlay has finished moving. */
+.overlay-lock * { pointer-events: none !important; }
+@keyframes overlay-fade-in { from { opacity: 0; } }
+@keyframes overlay-fade-out { to { opacity: 0; } }
+/* translate, not transform: dialogs use transform to stay centered. */
+@keyframes overlay-in { from { opacity: 0; translate: 0 -16px; } }
+@keyframes overlay-out { to { opacity: 0; translate: 0 16px; } }
+/* The nav is an overlay only while it is collapsed. Closed, it waits off screen. */
+@media (max-width: 1499.98px) {
+  .sidebar { visibility: hidden; transition: none; }
+  .sidebar.open, .sidebar.overlay-out { visibility: visible; transform: none; }
+  .sidebar.overlay-in { animation: overlay-in var(--fx-overlay) ease-out both; }
+  .sidebar.overlay-out { animation: overlay-out var(--fx-overlay) ease-in both; }
 }
 
 /* Page entrance: Blinky element by element, keys Glitch 1 one after another. */
@@ -3610,12 +3623,6 @@ button[data-fx-glitch] > :not(.btn-band) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dialog,
-  .connection-sheet,
-  .popover,
-  .select-menu {
-    animation: none;
-  }
   .m-square,
   .m-layer,
   .m-build-grid i {

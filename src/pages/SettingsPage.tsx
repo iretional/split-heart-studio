@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from "react";
 import type { Keymap } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { Icon } from "../components/Icon";
 import { ConnectionStatus, LockBanner, TopBar, syncText } from "../components/Shell";
+import { Overlay } from "../components/Overlay";
 import { MiniKeymap } from "../components/SplitHeartMap";
 import { Select } from "../components/Select";
 import { Segmented } from "../components/ui";
@@ -102,7 +103,7 @@ export function SettingsPage({ studio, onMenu, prefs }: { studio: Studio; onMenu
       </Section>
       {error && <p className="t-caption danger-text">{error.message}</p>}
     </div>
-    {confirm && <>
+    <Overlay open={confirm}>{confirm && <>
       <div className="scrim dialog-scrim" onClick={() => setConfirm(false)} />
       <div className="dialog" role="alertdialog" aria-modal="true" aria-labelledby="reset-title">
         <span className="dialog-icon"><Icon name="warning" size={20} /></span>
@@ -118,6 +119,6 @@ export function SettingsPage({ studio, onMenu, prefs }: { studio: Studio; onMenu
           <button className="btn btn-danger" onClick={() => { setConfirm(false); void resetSettings(); }}>Reset</button>
         </div>
       </div>
-    </>}
+    </>}</Overlay>
   </>;
 }

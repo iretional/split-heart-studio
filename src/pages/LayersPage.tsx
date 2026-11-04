@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Layer } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { Icon } from "../components/Icon";
+import { Overlay } from "../components/Overlay";
 import { LockBanner, TopBar } from "../components/Shell";
 import { ShuffleMark } from "../components/ShuffleMark";
 import { MiniKeymap, SplitHeartMap } from "../components/SplitHeartMap";
@@ -136,7 +137,7 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
       </section> : <section className="layer-detail desktop-only canvas-empty"><p className="t-body-strong">{locked ? "Unlock to load layers" : "Loading layers…"}</p></section>}
 
     </div>
-    {mobile && dialogOpen && layer && <>
+    <Overlay open={mobile && dialogOpen && !!layer}>{mobile && dialogOpen && layer && <>
       <div className="scrim scrim-blur" onClick={closeDialog} />
       <div className="dialog layer-dialog" role="dialog" aria-modal="true" aria-label={`Layer ${index}`}>
         <Field label={`LAYER ${index} · NAME`}>
@@ -168,6 +169,6 @@ export function LayersPage({ studio, onMenu, prefs, onShowKey }: { studio: Studi
           <button className="btn btn-primary" onClick={closeDialog}>Done</button>
         </div>
       </div>
-    </>}
+    </>}</Overlay>
   </>;
 }

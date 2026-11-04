@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 import { reducedMotion } from "./useHoverSelectFx";
 
 const LEAF = "button, a, input, select, textarea, label, svg, .box, [role=button], [data-enter-item]";
-const SKIP = ".scrim, title, defs, .key, .digit-band, details:not([open]) > :not(summary)";
+const SKIP = ".scrim, .sidebar.overlay-out, title, defs, .key, .digit-band, details:not([open]) > :not(summary)";
 const CONTROL = "input, select, textarea";
 /** Layers an effect draws over an element, which are not part of its value. */
 const BANDS = ".nav-band, .tab-band, .btn-band, .fx-shuffle";
