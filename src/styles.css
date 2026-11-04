@@ -3712,9 +3712,7 @@ button[data-fx-glitch] > :not(.btn-band) {
 }
 .m-square .shuffle-word { font-size: 16px; }
 
-/* Home row keys: going back to the stock binding, and the firmware's settings for reading only. */
-.home-row-restore p { margin: 0; }
-.sheet-fields .home-row-restore,
+/* Home row keys: the firmware's settings, for reading only. */
 .sheet-fields .accordion { grid-column: 1 / -1; }
 .timing-row { display: contents; }
 .accordion .timing-note { margin: calc(var(--space-6) * -1) 0 var(--space-12); }

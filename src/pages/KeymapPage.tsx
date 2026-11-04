@@ -14,7 +14,7 @@ import { Checkbox, Segmented } from "../components/ui";
 import { bindingLabel, implicitMods, keyboardUsageLabel, keycodeForUsage, keycodeText, toggleMod, withKeptMods } from "../keyLabels";
 import { behaviorId, isTransparent, keyParts } from "../studio/bindings";
 import { behaviorName, behaviorOptions, defaultBinding, paramFields, type ParamField } from "../studio/behaviors";
-import { homeRowKey, homeRowTiming } from "../studio/homeRow";
+import { homeRowTiming } from "../studio/homeRow";
 import { useIsMobile, type Prefs } from "../studio/prefs";
 import { SPLIT_HEART_KEY_COUNT, isLeftKey, positionName } from "../studio/splitHeartGeometry";
 import type { Studio } from "../studio/useStudio";
@@ -64,10 +64,6 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const clearKey = () => { if (none) write({ behaviorId: Number(none), param1: 0, param2: 0 }); };
   const toggleModifier = (name: string) => { if (modField && modValue !== null) setParam(modField.which, toggleMod(modValue, name)); };
 
-  const stock = isSplitHeart && layer && selected !== null ? homeRowKey(layer.id, selected) : undefined;
-  const stockBehavior = stock && behaviors.find(b => b.displayName === stock.behavior);
-  const changed = !!binding && !!stock && !!stockBehavior && (binding.behaviorId !== stockBehavior.id || binding.param1 !== stock.hold || binding.param2 !== stock.tap);
-  const restoreHomeRow = () => { if (stock && stockBehavior) write({ behaviorId: stockBehavior.id, param1: stock.hold, param2: stock.tap }); };
   const timing = isSplitHeart && binding ? homeRowTiming(names[binding.behaviorId]) : null;
 
   const tabs = <div className="tabs layer-tabs" role="tablist" aria-label="Layers">
@@ -90,8 +86,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const step = (d: number) => setSelected(s => ((s ?? 0) + d + count) % count);
   const pickingValue = binding && picking ? (picking === 1 ? binding.param1 : binding.param2) : 0;
   const keyFields = binding && <KeyFields binding={binding} names={names} behavior={behavior} behaviors={behaviors} fields={fields} showMods={!!modField} mods={mods} canClear={!!none}
-    onBehavior={changeBehavior} onParam={setParam} onPick={setPicking} onToggleMod={toggleModifier} onClear={clearKey}
-    restore={changed && stock ? `Your keymap has this key as hold ${keycodeNameOf(stock.hold)}, tap ${keycodeNameOf(stock.tap)}.` : null} onRestore={restoreHomeRow} />;
+    onBehavior={changeBehavior} onParam={setParam} onPick={setPicking} onToggleMod={toggleModifier} onClear={clearKey} />;
 
   return <>
     <TopBar title="Keymap" subtitle={studio.device} tabs={tabs} studio={studio} onMenu={onMenu} />
@@ -189,10 +184,10 @@ function KeyboardSvg({ keys, layer, names, selected, onSelect }: {
 // --- Inspector -------------------------------------------------------------
 
 /** Behavior, its value fields and modifiers. The Inspector and the phone Key Sheet show the same controls. */
-function KeyFields({ binding, names, behavior, behaviors, fields, showMods, mods, canClear, onBehavior, onParam, onPick, onToggleMod, onClear, restore, onRestore }: {
+function KeyFields({ binding, names, behavior, behaviors, fields, showMods, mods, canClear, onBehavior, onParam, onPick, onToggleMod, onClear }: {
   binding: BehaviorBinding; names: Record<number, string>; behavior: string; behaviors: GetBehaviorDetailsResponse[]; fields: ParamField[]; showMods: boolean; mods: string[]; canClear: boolean;
   onBehavior: (id: string) => void; onParam: (which: 1 | 2, value: number) => void; onPick: (which: 1 | 2) => void;
-  onToggleMod: (m: string) => void; onClear: () => void; restore: string | null; onRestore: () => void;
+  onToggleMod: (m: string) => void; onClear: () => void;
 }) {
   const value = (which: 1 | 2) => which === 1 ? binding.param1 : binding.param2;
   const usageText = (v: number) => { const c = keycodeForUsage(v); return c ? keycodeText(c) : keyboardUsageLabel(v) ?? bindingLabel(binding.behaviorId, v, v, names).title; };
@@ -209,9 +204,6 @@ function KeyFields({ binding, names, behavior, behaviors, fields, showMods, mods
     </div>)}
     {showMods && <div className="field field-mods"><span className="t-caption muted">MODIFIERS</span>
       <div className="mods">{MODS.map(m => <Checkbox key={m} label={m} checked={mods.includes(m)} onChange={() => onToggleMod(m)} />)}</div></div>}
-    {restore && <div className="field home-row-restore"><span className="t-caption muted">HOME ROW</span>
-      <p className="t-caption muted">{restore}</p>
-      <button className="btn btn-block" onClick={onRestore}>Restore home row</button></div>}
   </>;
 }
 
