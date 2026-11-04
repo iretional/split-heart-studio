@@ -35,7 +35,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const [picking, setPicking] = useState<1 | 2 | null>(null);
   const mobile = useIsMobile();
   const tabFx = useHoverSelectFx<number>();
-  const keySheet = useSheetDrag<HTMLElement>();
+  const keySheet = useSheetDrag<HTMLElement>(mobile && !locked);
   const tabKey = layerIndex + half;
   const body = useEntrance<HTMLDivElement>(tabKey, false);
   useEffect(() => { if (focus) { setLayerIndex(focus.layer); setSelected(focus.key); } }, [focus]);

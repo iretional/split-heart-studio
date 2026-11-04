@@ -7,12 +7,22 @@ const TAP_PX = 4;
 const SETTLE_MS = 200;
 /** How far along its travel a drag has to get before the sheet goes the rest of the way. */
 const COMMIT = 0.25;
+/** A finger has to travel this far up, mostly straight, for a swipe to count as scrolling down. */
+const SWIPE_PX = 56;
+/** Wheel travel that counts as scrolling down. A single mouse wheel notch stays under it. */
+const WHEEL_PX = 150;
+/** A pause this long starts the wheel count over, so small scrolls don't add up. */
+const WHEEL_RESET_MS = 200;
+const LINE_PX = 16;
+/** Touches starting here do something else with the finger. */
+const OWN_GESTURE = ".sheet-handle, input, textarea, select, [draggable=true]";
 
 /**
  * A bottom sheet that is pulled up by its handle until it covers the screen. At rest it sits in the
  * page's flow; while it moves it floats over the page, because a flow height can't be animated.
+ * The page around it can't scroll, so with `scrollOpens` a deliberate scroll down opens the sheet instead.
  */
-export function useSheetDrag<T extends HTMLElement>() {
+export function useSheetDrag<T extends HTMLElement>(scrollOpens = false) {
   const sheet = useRef<T>(null);
   const [expanded, setExpanded] = useState(false);
   const [floating, setFloating] = useState(false);
@@ -49,6 +59,43 @@ export function useSheetDrag<T extends HTMLElement>() {
     el.style.height = (open ? window.innerHeight : restHeight(el)) + "px";
     timer.current = window.setTimeout(finish, SETTLE_MS);
   };
+
+  useEffect(() => {
+    const page = sheet.current?.parentElement;
+    if (!scrollOpens || expanded || !page) return;
+    const open = () => { if (!drag.current && !sheet.current?.style.transition) settle(true); };
+    let swipe: { x: number; y: number } | null = null;
+    let wheeled = 0, lastWheel = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      const own = e.target instanceof Element && e.target.closest(OWN_GESTURE);
+      swipe = e.touches.length === 1 && !own ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!swipe) return;
+      if (e.touches.length !== 1) { swipe = null; return; }
+      const up = swipe.y - e.touches[0].clientY, across = Math.abs(swipe.x - e.touches[0].clientX);
+      if (up < SWIPE_PX || up < across * 2) return;
+      swipe = null;
+      open();
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (e.timeStamp - lastWheel > WHEEL_RESET_MS || e.deltaY <= 0) wheeled = 0;
+      lastWheel = e.timeStamp;
+      wheeled += Math.max(0, e.deltaY) * (e.deltaMode === WheelEvent.DOM_DELTA_LINE ? LINE_PX : 1);
+      if (wheeled < WHEEL_PX) return;
+      wheeled = 0;
+      open();
+    };
+    page.addEventListener("touchstart", onTouchStart, { passive: true });
+    page.addEventListener("touchmove", onTouchMove, { passive: true });
+    page.addEventListener("wheel", onWheel, { passive: true });
+    return () => {
+      page.removeEventListener("touchstart", onTouchStart);
+      page.removeEventListener("touchmove", onTouchMove);
+      page.removeEventListener("wheel", onWheel);
+    };
+    // settle reads only refs and setters, so an older copy of it behaves the same.
+  }, [scrollOpens, expanded]);
 
   const handle = {
     onPointerDown: (e: PointerEvent<HTMLElement>) => {
