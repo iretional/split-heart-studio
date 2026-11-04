@@ -38,6 +38,8 @@ export function keyParts(i: number, b: BehaviorBinding | undefined, names: Recor
     const shown = index < 0 ? b.param1 : index;
     return { name: layer ? layer.name || "Layer " + index : "Layer " + shown, code, hint: `${behavior} (${layerCode} ${shown})` };
   }
+  // A mouse button's value is a bit mask, not a keycode: MB3 is 4, which would read as the key A.
+  if (lower === "mouse key press") return { name: "MB" + (Math.log2(b.param1) + 1), code, hint: behavior };
   const shown = behaviorName(behavior);
   // A keymap's own hold-taps (home row mods) have any name, so a keycode in the second parameter is what marks them.
   const tapKey = (lower.includes("tap") && (lower.includes("hold") || lower.includes("mod") || lower.includes("layer"))) || isKeycode(b.param2);
@@ -47,7 +49,8 @@ export function keyParts(i: number, b: BehaviorBinding | undefined, names: Recor
   if (!key) return { name: behaviorKeySymbol(behavior) ?? (shown !== behavior ? shown : bindingLabel(b.behaviorId, b.param1, b.param2, names).title), code, hint: shown };
   const hold = tapKey && isKeycode(b.param1) ? keycodeForUsage(b.param1) : undefined;
   const prefix = lower.includes("key press") ? "" : shown + ": " + (hold ? `hold ${keycodeText(hold)}, tap ` : "");
-  const mods = implicitMods(value);
+  // EXCL is LS(N1) and has a name of its own, so its Shift isn't an added modifier.
+  const mods = key.usage === value >>> 0 ? [] : implicitMods(value);
   return { name: mods.length ? `${mods.join("+")} ${key.symbol}` : key.symbol, icon: mods.length ? undefined : key.icon, code,
     hint: `${prefix}${mods.map(m => m + " + ").join("")}${keycodeText(key)} (${key.zmk})\n${key.description}` };
 }

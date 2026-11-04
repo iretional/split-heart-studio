@@ -70,7 +70,7 @@ export function bindingLabel(
     return { title: "—", subtitle: "None" };
   if (lower.includes("momentary layer")) return { title: "MO " + param1, subtitle: "" };
   const isHoldTap = lower.includes("tap") && (lower.includes("hold") || lower.includes("mod") || lower.includes("layer"));
-  const isKey = lower.includes("key press") || lower === "kp" || lower.includes("key toggle") || lower.includes("sticky key");
+  const isKey = (lower.includes("key press") && !lower.includes("mouse")) || lower === "kp" || lower.includes("key toggle") || lower.includes("sticky key");
   if (isHoldTap || isKey) {
     const label = keyboardUsageLabel(isHoldTap ? param2 : param1);
     if (label) return { title: label, subtitle: isHoldTap ? "Hold-Tap" : "" };
