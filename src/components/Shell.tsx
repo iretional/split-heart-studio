@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Studio } from "../studio/useStudio";
 import { Icon, type IconName } from "./Icon";
 import { Overlay, useOverlay } from "./Overlay";
@@ -12,12 +12,10 @@ const OFFLINE_PAGES: readonly Page[] = ["motion"];
 /** Opened by typing the address. The nav lists them only while they are open. */
 const UNLISTED_PAGES: readonly Page[] = ["motion"];
 
-/** Connection Status component: dot + label on desktop, dot only in the phone top bar. */
-export function ConnectionStatus({ connected, variant }: { connected: boolean; variant: "desktop" | "mobile" }) {
-  const label = connected ? "Connected" : "Disconnected";
-  return <span className={"status " + variant + (connected ? " connected" : "")}
-    role="status" aria-label={variant === "mobile" ? label : undefined}>
-    <span className="status-dot" />{variant === "desktop" && <span className="t-body">{label}</span>}
+/** Connection Status component: a dot and its label. */
+export function ConnectionStatus({ connected }: { connected: boolean }) {
+  return <span className={"status desktop" + (connected ? " connected" : "")} role="status">
+    <span className="status-dot" /><span className="t-body">{connected ? "Connected" : "Disconnected"}</span>
   </span>;
 }
 
@@ -59,7 +57,7 @@ export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastS
       <div className="device">
         <span className="t-caption muted">DEVICE</span>
         <span className="t-body-strong">{connected ? device : "No keyboard"}</span>
-        <ConnectionStatus connected={connected} variant="desktop" />
+        <ConnectionStatus connected={connected} />
       </div>
       <div className="meta">
         <span className="t-caption muted">LAST SYNC</span><span className="t-caption muted">{syncText(lastSync)}</span>
@@ -68,32 +66,41 @@ export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastS
   </>;
 }
 
-/** Save Status component. Phones show the short form from the design: "Saved" or "Save · n". */
+/** Save Status component. Phones show two buttons whose icon and color say whether there is anything to do. */
 function SaveStatus({ studio }: { studio: Studio }) {
   const { unsaved, saveChanges, discardChanges } = studio;
-  if (!unsaved) return <>
-    <span className="save-status desktop-only t-caption muted"><Icon name="check" size={14} />All changes saved</span>
-    <span className="save-status mobile-only t-caption muted"><Icon name="check" size={14} />Saved</span>
-  </>;
+  const pending = unsaved > 0;
+  const activeIf = pending ? " active" : "";
   return <>
-    <span className="save-status desktop-only">
-      <span className="dot-danger" />
-      <span className="t-caption variant">{unsaved} unsaved change{unsaved === 1 ? "" : "s"}</span>
-      <button className="btn" onClick={() => void discardChanges()}>Discard</button>
-      <button className="btn btn-primary" onClick={() => void saveChanges()}>Save</button>
+    {pending
+      ? <span className="save-status desktop-only">
+          <span className="dot-danger" />
+          <span className="t-caption variant">{unsaved} unsaved change{unsaved === 1 ? "" : "s"}</span>
+          <button className="btn" onClick={() => void discardChanges()}>Discard</button>
+          <button className="btn btn-primary" onClick={() => void saveChanges()}>Save</button>
+        </span>
+      : <span className="save-status desktop-only t-caption muted"><Icon name="check" size={14} />All changes saved</span>}
+    <span className="save-actions mobile-only">
+      <button className={"icon-btn save-action" + activeIf} disabled={!pending} aria-label={pending ? `Save ${unsaved} unsaved change${unsaved === 1 ? "" : "s"}` : "All changes saved"} onClick={() => void saveChanges()}><Icon name={pending ? "save" : "check"} size={20} /></button>
+      <button className={"icon-btn discard-action" + activeIf} disabled={!pending} aria-label="Discard changes" onClick={() => void discardChanges()}><Icon name="close" size={20} /></button>
     </span>
-    <button className="btn btn-primary mobile-only" onClick={() => void saveChanges()}>Save · {unsaved}</button>
   </>;
 }
 
 /** Top bar shared by every page. title, subtitle and tabs vary; the right side is always the same. */
-export function TopBar({ title, subtitle, tabs, studio, onMenu, onBack, mobileAction, showSave = true }: {
+export function TopBar({ title, subtitle, tabs, studio, onMenu, onBack, showSave = true }: {
   title?: string; subtitle?: string; tabs?: ReactNode; studio: Studio; onMenu: () => void;
-  onBack?: () => void; mobileAction?: ReactNode; showSave?: boolean;
+  onBack?: () => void; showSave?: boolean;
 }) {
-  const { connected, device, loading, refresh, disconnect, unsaved, discardChanges } = studio;
+  const { connected, device, loading, refresh, disconnect } = studio;
   const [menu, setMenu] = useState(false);
-  const [sheet, setSheet] = useState(false);
+  const menuAnchor = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!menu) return;
+    const onPress = (e: PointerEvent) => { if (!menuAnchor.current?.contains(e.target as Node)) setMenu(false); };
+    document.addEventListener("pointerdown", onPress);
+    return () => document.removeEventListener("pointerdown", onPress);
+  }, [menu]);
   return <header className="topbar">
     <div className={"topbar-title" + (tabs ? " with-tabs" : "")}>
       {onBack
@@ -105,40 +112,17 @@ export function TopBar({ title, subtitle, tabs, studio, onMenu, onBack, mobileAc
     {tabs}
     <div className="topbar-spacer" />
     <div className="right-actions">
-      <button className="icon-btn mobile-only conn-btn" aria-label="Connection details" onClick={() => setSheet(true)}>
-        <ConnectionStatus connected={connected} variant="mobile" />
-      </button>
-      {mobileAction && <span className="mobile-only">{mobileAction}</span>}
       {connected && showSave && <div className="save-slot"><SaveStatus studio={studio} /></div>}
       <div className="keyboard-select desktop-only"><span className="t-label">{(device || "Split Heart").toUpperCase()}</span><Icon name="chevronDown" size={14} /></div>
-      <span className="menu-anchor more-slot mobile-only">
+      <span ref={menuAnchor} className="menu-anchor more-slot mobile-only">
         <button className="icon-btn" aria-label="More" aria-expanded={menu} onClick={() => setMenu(m => !m)}><Icon name="more" size={18} /></button>
         <Overlay open={menu}>{menu && <div className="popover card" role="menu" onClick={() => setMenu(false)}>
-          <button role="menuitem" className="t-body" onClick={refresh} disabled={loading || !connected}>Refresh from keyboard</button>
-          {unsaved > 0 && <button role="menuitem" className="t-body" onClick={() => void discardChanges()}>Discard changes</button>}
-          <button role="menuitem" className="t-body" onClick={disconnect} disabled={!connected}>Disconnect</button>
+          <button role="menuitem" className="t-body" onClick={refresh} disabled={loading || !connected}><Icon name="refresh" size={16} />Refresh from keyboard</button>
+          <button role="menuitem" className="t-body" onClick={disconnect} disabled={!connected}><Icon name="plug" size={16} />Disconnect</button>
         </div>}</Overlay>
       </span>
     </div>
-    <Overlay open={sheet}>{sheet && <ConnectionSheet studio={studio} onClose={() => setSheet(false)} />}</Overlay>
   </header>;
-}
-
-function ConnectionSheet({ studio, onClose }: { studio: Studio; onClose: () => void }) {
-  const { connected, device, firmware, locked, transport, lock, disconnect } = studio;
-  return <>
-    <div className="scrim" onClick={onClose} />
-    <div className="connection-sheet" role="dialog" aria-label="Connection">
-      <div className="connection-head"><span className="t-body-strong">Connection</span><ConnectionStatus connected={connected} variant="desktop" /></div>
-      <div className="connection-row"><span className="t-body variant">Keyboard</span><span className="t-body-strong">{connected ? device : "None"}</span></div>
-      <div className="connection-row"><span className="t-body variant">Link</span><span className="t-body-strong">{transport === "usb" ? "USB serial" : "Bluetooth"}</span></div>
-      <div className="connection-row"><span className="t-body variant">Firmware</span><span className="t-body-strong">{firmware}</span></div>
-      <div className="connection-row"><span className="t-body variant">Studio lock</span>
-        <span className="connection-value"><span className="t-body-strong">{locked ? "Locked" : "Unlocked"}</span>
-          <button className="btn" disabled={locked || !connected} onClick={() => void lock()}>Lock</button></span></div>
-      <div className="connection-actions"><button className="btn btn-lg btn-block" disabled={!connected} onClick={() => { disconnect(); onClose(); }}>Disconnect</button></div>
-    </div>
-  </>;
 }
 
 export function LockBanner({ onRefresh, loading }: { onRefresh: () => void; loading: boolean }) {

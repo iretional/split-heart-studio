@@ -6,6 +6,7 @@ const paths = {
   chevronRight: <path d="m9 18 6-6-6-6" />,
   chevronDown: <path d="m6 9 6 6 6-6" />,
   check: <path d="m5 12 5 5 9-10" strokeWidth="2.5" />,
+  save: <><path d="M5 3h11.5L21 7.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M8 3v5h7V3" /><path d="M7 21v-7h10v7" /></>,
   lock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></>,
   plug: <path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0V8ZM12 18v4" />,
   warning: <><path d="M12 4 2.5 20h19L12 4Z" /><path d="M12 10v4M12 17v.5" /></>,

@@ -25,13 +25,17 @@ const LAYER_CODES: [RegExp, string][] = [[/momentary/, "MO"], [/toggle layer/, "
 
 /** What a map key shows: its symbol or icon, plus a tooltip with the role, keycode and description. */
 export function keyParts(i: number, b: BehaviorBinding | undefined, names: Record<number, string>, mode: KeyLabelMode = "Keycode", layers: Layer[] = []): { name: string; icon?: IconName; code: string; hint: string } {
-  if (mode === "Position") return { name: positionName(i), code: "", hint: "" };
-  if (!b) return { name: "?", code: "", hint: "" };
-  const behavior = names[b.behaviorId] ?? "";
+  const behavior = b ? names[b.behaviorId] ?? "" : "";
   const lower = behavior.toLowerCase();
-  // Only the Both setting adds a second line: the key's position.
-  const code = mode === "Both" ? positionName(i) : "";
   const layerCode = LAYER_CODES.find(([re]) => re.test(lower))?.[1];
+  // A key that switches layers says which one on its second line, as in MO1 or LT4.
+  const tagCode = layerCode ?? (lower.includes("layer-tap") ? "LT" : "");
+  const tagIndex = b && tagCode ? layers.findIndex(l => l.id === b.param1) : -1;
+  const tag = b && tagCode ? tagCode + (tagIndex < 0 ? b.param1 : tagIndex) : "";
+  if (mode === "Position") return { name: positionName(i), code: tag, hint: "" };
+  if (!b) return { name: "?", code: "", hint: "" };
+  // The Both setting adds the key's position to that line.
+  const code = [tag, mode === "Both" ? positionName(i) : ""].filter(Boolean).join(" · ");
   if (layerCode) {
     const index = layers.findIndex(l => l.id === b.param1);
     const layer = layers[index];

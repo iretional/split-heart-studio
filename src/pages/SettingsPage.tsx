@@ -70,7 +70,7 @@ export function SettingsPage({ studio, onMenu, prefs }: { studio: Studio; onMenu
         <Section title="DEVICE">
           <Row title={device} sub="Reported by the keyboard over ZMK Studio"><span className="t-body variant">Left half · central</span></Row>
           <Row title="Firmware" sub="Rebuild in zmk-config to update"><span className="t-body variant">{firmware}</span></Row>
-          <Row title="Connection" sub={link}><ConnectionStatus connected={connected} variant="desktop" /><button className="btn" onClick={disconnect}>Disconnect</button></Row>
+          <Row title="Connection" sub={link}><ConnectionStatus connected={connected} /><button className="btn" onClick={disconnect}>Disconnect</button></Row>
           <Row title="Studio lock" sub="Locks again after reconnecting or idling"><span className="t-body variant">{locked ? "Locked" : "Unlocked"}</span><button className="btn" disabled={locked} onClick={() => void lock()}>Lock</button></Row>
         </Section>
         <Section title="PHYSICAL LAYOUT" lead="The firmware reports these layouts. Switching changes which key positions the keymap uses." shortLead="Switching changes which key positions the keymap uses.">

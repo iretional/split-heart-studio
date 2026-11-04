@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { flushSync } from "react-dom";
 import { reducedMotion } from "./useHoverSelectFx";
 
@@ -40,8 +40,8 @@ export function useSheetDrag<T extends HTMLElement>() {
       el.style.transition = "";
       setExpanded(open);
       setFloating(false);
-      if (!open) el.scrollTop = 0;
     };
+    if (!open) el.scrollTop = 0;
     if (reducedMotion()) return finish();
     float(el, el.getBoundingClientRect().height);
     el.getBoundingClientRect();
@@ -83,5 +83,14 @@ export function useSheetDrag<T extends HTMLElement>() {
     },
   };
 
-  return { sheet, handle, expanded, floating };
+  /** Pressing the empty space under an expanded sheet's content puts it back. */
+  const onSheetClick = (e: MouseEvent) => {
+    const el = sheet.current;
+    // A menu opened from the sheet sits elsewhere on the page, but its clicks still arrive here.
+    if (!el || !expanded || !el.contains(e.target as Node)) return;
+    const end = el.lastElementChild?.lastElementChild ?? el.lastElementChild;
+    if (end && e.clientY > end.getBoundingClientRect().bottom) settle(false);
+  };
+
+  return { sheet, handle, onSheetClick, expanded, floating };
 }
