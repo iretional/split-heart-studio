@@ -18,12 +18,24 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
   const [active, setActive] = useState(0);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
   const id = useId();
   const mobile = useIsMobile();
   const current = options.findIndex(o => o.value === value);
   const shown = options[current]?.label ?? "";
 
-  const show = () => { setActive(Math.max(current, 0)); setOpen(true); };
+  // Phones split a grouped list into tabs, starting on the current value's group.
+  const groups = [...new Set(options.flatMap(o => o.group ? [o.group] : []))];
+  const tabbed = mobile && groups.length > 1;
+  const [tab, setTab] = useState("");
+  const visible = [...options.keys()].filter(i => !tabbed || options[i].group === tab);
+  const showTab = (g: string) => {
+    setTab(g);
+    setActive(options.findIndex(o => o.group === g));
+    if (list.current) list.current.scrollTop = 0;
+  };
+
+  const show = () => { setActive(Math.max(current, 0)); setTab(options[current]?.group ?? groups[0] ?? ""); setOpen(true); };
   const hide = () => { setOpen(false); trigger.current?.focus(); };
   const pick = (i: number) => { hide(); if (options[i].value !== value) onChange(options[i].value); };
 
@@ -31,7 +43,11 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
   useLayoutEffect(() => {
     const el = menu.current, field = trigger.current;
     if (!open || !el || !field) return;
-    if (mobile) { el.focus({ preventScroll: true }); return; }
+    if (mobile) {
+      el.querySelector(".select-tabs .tab.active")?.scrollIntoView({ block: "nearest", inline: "center" });
+      el.focus({ preventScroll: true });
+      return;
+    }
     const r = field.getBoundingClientRect();
     const width = Math.max(r.width, MIN_WIDTH);
     const below = window.innerHeight - r.bottom - GAP - EDGE, above = r.top - GAP - EDGE;
@@ -67,14 +83,14 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
   }, [open, mobile]);
 
   const onMenuKey = (e: KeyboardEvent) => {
-    const last = options.length - 1;
-    const moves: Record<string, number> = { ArrowDown: Math.min(active + 1, last), ArrowUp: Math.max(active - 1, 0), Home: 0, End: last };
+    const at = visible.indexOf(active), last = visible.length - 1;
+    const moves: Record<string, number> = { ArrowDown: visible[Math.min(at + 1, last)], ArrowUp: visible[Math.max(at - 1, 0)], Home: visible[0], End: visible[last] };
     if (e.key in moves) setActive(moves[e.key]);
     else if (e.key === "Enter" || e.key === " ") pick(active);
     else if (e.key === "Escape" || e.key === "Tab") hide();
     else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
       const starts = (i: number) => options[i].label.toLowerCase().startsWith(e.key.toLowerCase());
-      const next = [...options.keys()].find(i => i > active && starts(i)) ?? [...options.keys()].find(starts);
+      const next = visible.find(i => i > active && starts(i)) ?? visible.find(starts);
       if (next !== undefined) setActive(next);
       else return;
     } else return;
@@ -89,15 +105,20 @@ export function Select<T extends string>({ value, options, onChange, disabled, l
     </button>
     {open && createPortal(<>
       {mobile && <div className="scrim scrim-blur select-scrim" onClick={hide} />}
-      <div ref={menu} className={"select-menu" + (mobile ? " overlay" : "")} role="listbox" tabIndex={-1} aria-label={label} aria-activedescendant={`${id}-${active}`} onKeyDown={onMenuKey}>
-        {options.map((o, i) => <div key={o.value} className="select-row">
-          {o.group && o.group !== options[i - 1]?.group && <span className="select-group t-caption muted">{o.group}</span>}
-          <button id={`${id}-${i}`} type="button" role="option" tabIndex={-1} aria-selected={i === current}
-            className={"select-option t-body" + (i === active ? " active" : "")}
-            onMouseEnter={() => setActive(i)} onMouseDown={e => e.preventDefault()} onClick={() => pick(i)}>
-            <span className="select-value">{o.label}</span>{i === current && <Icon name="check" size={14} />}
-          </button>
-        </div>)}
+      <div ref={menu} className={"select-menu" + (mobile ? " overlay" : "") + (tabbed ? " tabbed" : "")} role="listbox" tabIndex={-1} aria-label={label} aria-activedescendant={`${id}-${active}`} onKeyDown={onMenuKey}>
+        {tabbed && <div className="tabs select-tabs" role="tablist" aria-label={label && `${label} groups`}>
+          {groups.map(g => <button key={g} type="button" role="tab" tabIndex={-1} aria-selected={g === tab} className={"tab t-label" + (g === tab ? " active" : "")} onClick={() => showTab(g)}>{g.toUpperCase()}</button>)}
+        </div>}
+        <div ref={list} className={tabbed ? "select-list" : "select-rows"}>
+          {visible.map(i => { const o = options[i]; return <div key={o.value} className="select-row">
+            {!tabbed && o.group && o.group !== options[i - 1]?.group && <span className="select-group t-caption muted">{o.group}</span>}
+            <button id={`${id}-${i}`} type="button" role="option" tabIndex={-1} aria-selected={i === current}
+              className={"select-option t-body" + (i === active ? " active" : "")}
+              onMouseEnter={() => setActive(i)} onMouseDown={e => e.preventDefault()} onClick={() => pick(i)}>
+              <span className="select-value">{o.label}</span>{i === current && <Icon name="check" size={14} />}
+            </button>
+          </div>; })}
+        </div>
       </div>
     </>, document.body)}
   </span>;

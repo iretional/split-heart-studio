@@ -3656,7 +3656,7 @@ button[data-fx-glitch] > :not(.btn-band) {
 .select-menu.overlay {
   inset: var(--space-16);
   height: fit-content;
-  max-height: calc(100dvh - var(--space-32));
+  max-height: 50dvh;
   margin-block: auto;
   border: 0;
   border-radius: 8px;
@@ -3679,3 +3679,19 @@ button[data-fx-glitch] > :not(.btn-band) {
 .layer-dialog .button-row { margin-top: calc(var(--space-4) * -1); }
 .activator-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .layer-dialog .key-svg { overflow: hidden; }
+
+/* A grouped list on a phone: fixed height so switching tabs doesn't resize it, and only the options scroll. */
+.select-rows { display: contents; }
+.select-menu.overlay.tabbed { height: 50dvh; padding: 0; overflow: hidden; }
+.tabs.select-tabs {
+  flex: none;
+  order: 0;
+  width: 100%;
+  height: 44px;
+  gap: var(--space-18);
+  padding: 0 var(--space-12);
+  border-top: 0;
+  border-bottom: 1px solid var(--outline-base);
+}
+.tabs.select-tabs .tab { flex: none; border-top: 0; border-bottom-width: 2px; }
+.select-list { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-6); }
