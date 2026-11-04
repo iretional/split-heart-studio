@@ -8,6 +8,7 @@ import { Overlay } from "../components/Overlay";
 import { LockBanner, TopBar } from "../components/Shell";
 import { SplitHeartMap } from "../components/SplitHeartMap";
 import { useEntrance } from "../components/useEntrance";
+import { useSheetDrag } from "../components/useSheetDrag";
 import { useHoverSelectFx } from "../components/useHoverSelectFx";
 import { Select } from "../components/Select";
 import { Checkbox, Segmented } from "../components/ui";
@@ -34,6 +35,7 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
   const [picking, setPicking] = useState<1 | 2 | null>(null);
   const mobile = useIsMobile();
   const tabFx = useHoverSelectFx<number>();
+  const keySheet = useSheetDrag<HTMLElement>();
   const tabKey = layerIndex + half;
   const body = useEntrance<HTMLDivElement>(tabKey, false);
   useEffect(() => { if (focus) { setLayerIndex(focus.layer); setSelected(focus.key); } }, [focus]);
@@ -100,7 +102,8 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
           : layer && layout && <KeyboardSvg keys={layout.keys} layer={layer} names={names} selected={selected} onSelect={setSelected} />}
       </section>
       <Inspector locked={locked} layer={layer} selected={selected} count={count} onSelect={setSelected} timing={timing && <HomeRowTiming rows={timing} open />}>{keyFields}</Inspector>
-      <section className="key-sheet mobile-only" aria-label="Selected key">
+      <section ref={keySheet.sheet} className={"key-sheet mobile-only" + (keySheet.floating ? " floating" : keySheet.expanded ? " expanded" : "")} aria-label="Selected key">
+        <div className="sheet-handle" role="button" tabIndex={0} aria-label={keySheet.expanded ? "Collapse key settings" : "Expand key settings"} aria-expanded={keySheet.expanded} {...keySheet.handle}><i /></div>
         <div className="sheet-header">
           <span className="key-badge t-body-strong"><GlitchDigits text={selected === null ? "—" : positionName(selected)} /></span>
           <span className="sheet-binding"><span className="t-body-strong">{locked ? "Locked" : binding ? modValue !== null ? keycodeNameOf(modValue) : bindingLabel(binding.behaviorId, binding.param1, binding.param2, names).title : "No key"}</span>

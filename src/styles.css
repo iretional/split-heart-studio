@@ -3737,4 +3737,34 @@ button[data-fx-glitch] > :not(.btn-band) {
     overflow: hidden;
   }
   .key-sheet { flex: 1; min-height: 0; overflow-y: auto; }
+  /* Pulled up by its handle, the Key Sheet covers the page. The handle stays reachable while the sheet scrolls. */
+  .key-sheet.floating,
+  .key-sheet.expanded {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 12;
+    flex: none;
+  }
+  .key-sheet.expanded { height: 100dvh; border-radius: 0; }
+  .sheet-handle {
+    position: sticky;
+    top: calc(var(--space-8) * -1);
+    z-index: 1;
+    flex: none;
+    display: flex;
+    justify-content: center;
+    margin: calc(var(--space-8) * -1) calc(var(--space-16) * -1);
+    padding: var(--space-8) 0;
+    background: var(--surface-base);
+    cursor: grab;
+    touch-action: none;
+  }
+  .sheet-handle > i {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--outline-strong);
+  }
 }
