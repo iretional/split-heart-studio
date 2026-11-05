@@ -3691,6 +3691,8 @@ button[data-fx-glitch] > :not(.btn-band) {
     flex: none;
   }
   .key-sheet.expanded { height: 100dvh; border-radius: 0; overflow: hidden auto; }
+  /* A scroll only raises it this far, so the keyboard stays in reach above it. */
+  .key-sheet.expanded.half { height: 50dvh; border-radius: 12px 12px 0 0; }
   .sheet-handle {
     position: sticky;
     top: calc(var(--space-8) * -1);

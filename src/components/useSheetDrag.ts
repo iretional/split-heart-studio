@@ -17,15 +17,18 @@ const LINE_PX = 16;
 /** Touches starting here do something else with the finger. */
 const OWN_GESTURE = ".sheet-handle, input, textarea, select, [draggable=true]";
 
+/** Where the sheet can come to rest: in the page's flow, over half the screen, or over all of it. */
+type Stop = "rest" | "half" | "full";
+
 /**
  * A bottom sheet that is pulled up by its handle until it covers the screen. At rest it sits in the
  * page's flow; while it moves it floats over the page, because a flow height can't be animated.
- * The page around it can't scroll, so with `scrollMoves` a deliberate scroll down opens the sheet instead.
- * Once open, a scroll up from the top of its content closes it again.
+ * The page around it can't scroll, so with `scrollMoves` a deliberate scroll down raises the sheet to half the screen.
+ * Once open, a scroll up from the top of its content closes it again. Only the handle takes it all the way up.
  */
 export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
   const sheet = useRef<T>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [stop, setStop] = useState<Stop>("rest");
   const [floating, setFloating] = useState(false);
   const drag = useRef<{ y: number; start: number; moved: boolean } | null>(null);
   const timer = useRef<number>();
@@ -43,32 +46,38 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
     el.style.height = height + "px";
   };
 
-  const settle = (open: boolean) => {
+  const settle = (to: Stop) => {
     const el = sheet.current;
     if (!el) return;
     const finish = () => {
       el.style.height = "";
       el.style.transition = "";
-      setExpanded(open);
+      setStop(to);
       setFloating(false);
     };
-    if (!open) el.scrollTop = 0;
+    if (to === "rest") el.scrollTop = 0;
     if (reducedMotion()) return finish();
     float(el, el.getBoundingClientRect().height);
     el.getBoundingClientRect();
     el.style.transition = `height ${SETTLE_MS}ms ease-out`;
-    el.style.height = (open ? window.innerHeight : restHeight(el)) + "px";
+    el.style.height = (to === "full" ? window.innerHeight : to === "half" ? window.innerHeight / 2 : restHeight(el)) + "px";
     timer.current = window.setTimeout(finish, SETTLE_MS);
   };
 
   useEffect(() => {
     const el = sheet.current;
-    const target = expanded ? el : el?.parentElement;
+    // A full sheet leaves no page to touch. At half, the keyboard above it answers too.
+    const target = stop === "full" ? el : el?.parentElement;
     if (!scrollMoves || !el || !target) return;
-    const toward = expanded ? -1 : 1;
-    const move = () => { if (!drag.current && !el.style.transition) settle(!expanded); };
+    const toward = stop === "rest" ? 1 : -1;
+    const move = () => {
+      if (drag.current || el.style.transition) return;
+      if (stop !== "rest") return settle("rest");
+      // On a screen where the sheet already fills half, there's nothing to raise it to.
+      if (restHeight(el) < window.innerHeight / 2) settle("half");
+    };
     // An open sheet scrolls its own content first, so it only closes from the top of that content.
-    const atEnd = () => !expanded || el.scrollTop <= 0;
+    const atEnd = () => stop === "rest" || el.scrollTop <= 0;
     let swipe: { x: number; y: number } | null = null;
     let wheeled = 0, lastWheel = 0, wheelCounts = true;
     const onTouchStart = (e: TouchEvent) => {
@@ -104,7 +113,9 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
       target.removeEventListener("wheel", onWheel);
     };
     // settle reads only refs and setters, so an older copy of it behaves the same.
-  }, [scrollMoves, expanded]);
+  }, [scrollMoves, stop]);
+
+  const toggle = () => settle(stop === "full" ? "rest" : "full");
 
   const handle = {
     onPointerDown: (e: PointerEvent<HTMLElement>) => {
@@ -125,17 +136,17 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
       const el = sheet.current, d = drag.current;
       drag.current = null;
       if (!el || !d) return;
-      if (!d.moved) return settle(!expanded);
-      const rest = restHeight(el), full = window.innerHeight, height = el.getBoundingClientRect().height;
-      const travelled = (expanded ? full - height : height - rest) / Math.max(1, full - rest);
-      settle(travelled > COMMIT ? !expanded : expanded);
+      if (!d.moved) return toggle();
+      const height = el.getBoundingClientRect().height, up = height > d.start;
+      const travelled = up ? (height - d.start) / (window.innerHeight - d.start) : (d.start - height) / (d.start - restHeight(el));
+      settle(travelled > COMMIT ? (up ? "full" : "rest") : stop);
     },
     onPointerCancel: () => {
-      if (drag.current?.moved) settle(expanded);
+      if (drag.current?.moved) settle(stop);
       drag.current = null;
     },
     onKeyDown: (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); settle(!expanded); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
     },
   };
 
@@ -143,10 +154,10 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
   const onSheetClick = (e: MouseEvent) => {
     const el = sheet.current;
     // A menu opened from the sheet sits elsewhere on the page, but its clicks still arrive here.
-    if (!el || !expanded || !el.contains(e.target as Node)) return;
+    if (!el || stop === "rest" || !el.contains(e.target as Node)) return;
     const end = el.lastElementChild?.lastElementChild ?? el.lastElementChild;
-    if (end && e.clientY > end.getBoundingClientRect().bottom) settle(false);
+    if (end && e.clientY > end.getBoundingClientRect().bottom) settle("rest");
   };
 
-  return { sheet, handle, onSheetClick, expanded, floating };
+  return { sheet, handle, onSheetClick, stop, floating };
 }

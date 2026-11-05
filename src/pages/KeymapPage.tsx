@@ -102,8 +102,8 @@ export function KeymapPage({ studio, onMenu, prefs, focus }: { studio: Studio; o
           : layer && layout && <KeyboardSvg keys={layout.keys} layer={layer} names={names} selected={selected} onSelect={setSelected} />}
       </section>
       <Inspector locked={locked} layer={layer} selected={selected} count={count} onSelect={setSelected} timing={timing && <HomeRowTiming rows={timing} open />}>{keyFields}</Inspector>
-      <section ref={keySheet.sheet} className={"key-sheet mobile-only" + (keySheet.floating ? " floating" : keySheet.expanded ? " expanded" : "")} aria-label="Selected key" onClick={keySheet.onSheetClick}>
-        <div className="sheet-handle" role="button" tabIndex={0} aria-label={keySheet.expanded ? "Collapse key settings" : "Expand key settings"} aria-expanded={keySheet.expanded} {...keySheet.handle}><i /></div>
+      <section ref={keySheet.sheet} className={"key-sheet mobile-only" + (keySheet.floating ? " floating" : keySheet.stop === "rest" ? "" : " expanded " + keySheet.stop)} aria-label="Selected key" onClick={keySheet.onSheetClick}>
+        <div className="sheet-handle" role="button" tabIndex={0} aria-label={keySheet.stop === "full" ? "Collapse key settings" : "Expand key settings"} aria-expanded={keySheet.stop === "full"} {...keySheet.handle}><i /></div>
         <div className="sheet-header">
           <span className="key-badge t-body-strong"><GlitchDigits text={selected === null ? "—" : positionName(selected)} /></span>
           <span className="sheet-binding"><span className="t-body-strong">{locked ? "Locked" : binding ? modValue !== null ? keycodeNameOf(modValue) : bindingLabel(binding.behaviorId, binding.param1, binding.param2, names).title : "No key"}</span>
