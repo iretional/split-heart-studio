@@ -7,6 +7,9 @@ const TAP_PX = 4;
 const SETTLE_MS = 200;
 /** How far along its travel a drag has to get before the sheet goes the rest of the way. */
 const COMMIT = 0.25;
+/** Share of the screen the sheet covers at rest, and raised. Keep in step with `.key-sheet` in styles.css. */
+const REST = 0.25;
+const OPEN = 0.75;
 /** A finger has to travel this far, mostly straight, for a swipe to count as a scroll. */
 const SWIPE_PX = 56;
 /** Wheel travel that counts as a scroll. A single mouse wheel notch stays under it. */
@@ -17,50 +20,40 @@ const LINE_PX = 16;
 /** Touches starting here do something else with the finger. */
 const OWN_GESTURE = ".sheet-handle, input, textarea, select, [draggable=true]";
 
-/** Where the sheet can come to rest: in the page's flow, over half the screen, or over all of it. */
-type Stop = "rest" | "half" | "full";
-
 /**
- * A bottom sheet that is pulled up by its handle until it covers the screen. At rest it sits in the
- * page's flow; while it moves it floats over the page, because a flow height can't be animated.
- * Neither the page nor the sheet scrolls, so with `scrollMoves` a deliberate scroll moves the sheet one stop instead:
- * down raises it from rest to half the screen and then to all of it, up lowers it the same way.
+ * A bottom sheet over the foot of the page, with two sizes: a quarter of the screen at rest, three quarters raised.
+ * Its handle drags or toggles it. Neither the page nor the sheet scrolls, so with `scrollMoves` a deliberate
+ * scroll down raises the sheet and a scroll up lowers it.
  */
 export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
   const sheet = useRef<T>(null);
-  const [stop, setStop] = useState<Stop>("rest");
+  const [expanded, setExpanded] = useState(false);
   const [floating, setFloating] = useState(false);
   const drag = useRef<{ y: number; start: number; moved: boolean } | null>(null);
   const timer = useRef<number>();
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  /** The sheet's height at rest: what the keyboard leaves of the page. */
-  const restHeight = (el: T) => {
-    const body = el.parentElement!;
-    const above = body.querySelector(".canvas")!;
-    return body.getBoundingClientRect().bottom - above.getBoundingClientRect().bottom;
-  };
+  const heightOf = (open: boolean) => window.innerHeight * (open ? OPEN : REST);
 
   const float = (el: T, height: number) => {
     flushSync(() => setFloating(true));
     el.style.height = height + "px";
   };
 
-  const settle = (to: Stop) => {
+  const settle = (open: boolean) => {
     const el = sheet.current;
     if (!el) return;
     const finish = () => {
       el.style.height = "";
       el.style.transition = "";
-      setStop(to);
+      setExpanded(open);
       setFloating(false);
     };
-    if (to === "rest") el.scrollTop = 0;
     if (reducedMotion()) return finish();
     float(el, el.getBoundingClientRect().height);
     el.getBoundingClientRect();
     el.style.transition = `height ${SETTLE_MS}ms ease-out`;
-    el.style.height = (to === "full" ? window.innerHeight : to === "half" ? window.innerHeight / 2 : restHeight(el)) + "px";
+    el.style.height = heightOf(open) + "px";
     timer.current = window.setTimeout(finish, SETTLE_MS);
   };
 
@@ -69,13 +62,8 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
     // The sheet sits inside this, so a scroll anywhere on the page counts, over the sheet or not.
     const target = el?.parentElement;
     if (!scrollMoves || !el || !target) return;
-    const move = (toward: 1 | -1) => {
-      if (drag.current || el.style.transition) return;
-      // On a screen where the sheet already fills half, there's no half stop to pass through.
-      const hasHalf = restHeight(el) < window.innerHeight / 2;
-      const stops: Stop[] = hasHalf ? ["rest", "half", "full"] : ["rest", "full"];
-      const next = stops[stops.indexOf(stop === "half" && !hasHalf ? "rest" : stop) + toward];
-      if (next) settle(next);
+    const move = (open: boolean) => {
+      if (open !== expanded && !drag.current && !el.style.transition) settle(open);
     };
     let swipe: { x: number; y: number } | null = null;
     let wheeled = 0, lastWheel = 0, wheelCounts = true;
@@ -88,12 +76,12 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
       if (e.touches.length !== 1) { swipe = null; return; }
       const along = swipe.y - e.touches[0].clientY, across = Math.abs(swipe.x - e.touches[0].clientX);
       if (Math.abs(along) < SWIPE_PX || Math.abs(along) < across * 2) return;
-      // One swipe moves one stop.
+      // One swipe counts once.
       swipe = null;
-      move(along > 0 ? 1 : -1);
+      move(along > 0);
     };
     const onWheel = (e: WheelEvent) => {
-      // A wheel has to pause before it moves the sheet again, or one flick's momentum would carry it two stops.
+      // A wheel has to pause before it counts again, so one flick's momentum can't move the sheet and back.
       if (e.timeStamp - lastWheel > WHEEL_RESET_MS) { wheeled = 0; wheelCounts = true; }
       lastWheel = e.timeStamp;
       if (!wheelCounts) return;
@@ -102,7 +90,7 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
       wheeled = Math.sign(delta) === Math.sign(wheeled) ? wheeled + delta : delta;
       if (Math.abs(wheeled) < WHEEL_PX) return;
       wheelCounts = false;
-      move(wheeled > 0 ? 1 : -1);
+      move(wheeled > 0);
       wheeled = 0;
     };
     target.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -114,9 +102,7 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
       target.removeEventListener("wheel", onWheel);
     };
     // settle reads only refs and setters, so an older copy of it behaves the same.
-  }, [scrollMoves, stop]);
-
-  const toggle = () => settle(stop === "full" ? "rest" : "full");
+  }, [scrollMoves, expanded]);
 
   const handle = {
     onPointerDown: (e: PointerEvent<HTMLElement>) => {
@@ -131,34 +117,34 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
       const pulled = d.y - e.clientY;
       if (!d.moved && Math.abs(pulled) < TAP_PX) return;
       d.moved = true;
-      float(el, Math.min(window.innerHeight, Math.max(restHeight(el), d.start + pulled)));
+      float(el, Math.min(heightOf(true), Math.max(heightOf(false), d.start + pulled)));
     },
     onPointerUp: () => {
       const el = sheet.current, d = drag.current;
       drag.current = null;
       if (!el || !d) return;
-      if (!d.moved) return toggle();
-      const height = el.getBoundingClientRect().height, up = height > d.start;
-      const travelled = up ? (height - d.start) / (window.innerHeight - d.start) : (d.start - height) / (d.start - restHeight(el));
-      settle(travelled > COMMIT ? (up ? "full" : "rest") : stop);
+      if (!d.moved) return settle(!expanded);
+      const rest = heightOf(false), open = heightOf(true), height = el.getBoundingClientRect().height;
+      const travelled = (expanded ? open - height : height - rest) / Math.max(1, open - rest);
+      settle(travelled > COMMIT ? !expanded : expanded);
     },
     onPointerCancel: () => {
-      if (drag.current?.moved) settle(stop);
+      if (drag.current?.moved) settle(expanded);
       drag.current = null;
     },
     onKeyDown: (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); settle(!expanded); }
     },
   };
 
-  /** Pressing the empty space under an expanded sheet's content puts it back. */
+  /** Pressing the empty space under a raised sheet's content puts it back. */
   const onSheetClick = (e: MouseEvent) => {
     const el = sheet.current;
     // A menu opened from the sheet sits elsewhere on the page, but its clicks still arrive here.
-    if (!el || stop === "rest" || !el.contains(e.target as Node)) return;
+    if (!el || !expanded || !el.contains(e.target as Node)) return;
     const end = el.lastElementChild?.lastElementChild ?? el.lastElementChild;
-    if (end && e.clientY > end.getBoundingClientRect().bottom) settle("rest");
+    if (end && e.clientY > end.getBoundingClientRect().bottom) settle(false);
   };
 
-  return { sheet, handle, onSheetClick, stop, floating };
+  return { sheet, handle, onSheetClick, expanded, floating };
 }

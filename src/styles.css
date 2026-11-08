@@ -3666,7 +3666,7 @@ button[data-fx-glitch] > :not(.btn-band) {
 .timing-row { display: contents; }
 .accordion .timing-note { margin: calc(var(--space-6) * -1) 0 var(--space-12); }
 
-/* Phone Keymap: the keyboard keeps its size and the Key Sheet scrolls in the space left. */
+/* Phone Keymap: the keyboard keeps its size and the Key Sheet floats over the foot of the page. */
 @media (max-width: 760.98px) {
   .canvas { flex: none; }
   .canvas .key-svg { flex: none; height: 22.125rem; }
@@ -3677,27 +3677,25 @@ button[data-fx-glitch] > :not(.btn-band) {
     align-self: center;
     overflow: hidden;
   }
-  /* It doesn't scroll in this size: what doesn't fit is reached by pulling the sheet up. */
-  .key-sheet { flex: 1; min-height: 0; overflow: clip; }
-  /* While the sheet is up, a swipe down closes it, so it must not also reload the page. */
-  html:has(.key-sheet.expanded, .key-sheet.floating),
-  html:has(.key-sheet.expanded, .key-sheet.floating) body { overscroll-behavior-y: none; }
-  /* Pulled up by its handle, the Key Sheet covers the page. The handle stays reachable while the sheet scrolls. */
-  .key-sheet.floating,
-  .key-sheet.expanded {
+  /* The page keeps clear of the sheet at rest. */
+  .keymap-body { padding-bottom: 25dvh; }
+  /* A quarter of the screen at rest, three quarters raised (REST and OPEN in useSheetDrag). Nothing in it scrolls:
+     a scroll only raises or lowers it, and what doesn't fit at rest is reached by raising it. */
+  .key-sheet {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 12;
-    flex: none;
+    height: 25dvh;
+    overflow: hidden;
+    touch-action: none;
   }
-  .key-sheet.expanded { height: 100dvh; border-radius: 0; overflow: hidden; }
-  /* Its first stop on the way up, so the keyboard stays in reach above it. */
-  .key-sheet.expanded.half { height: 50dvh; border-radius: 12px 12px 0 0; }
-  /* Nothing on the page scrolls while the sheet is up: a scroll only moves the sheet. */
-  .keymap-body:has(.key-sheet.expanded, .key-sheet.floating),
-  .key-sheet.expanded { touch-action: none; }
+  .key-sheet.expanded { height: 75dvh; }
+  /* While the sheet is up, a swipe down lowers it, so it must not also reload the page or move anything else. */
+  html:has(.key-sheet.expanded, .key-sheet.floating),
+  html:has(.key-sheet.expanded, .key-sheet.floating) body { overscroll-behavior-y: none; }
+  .keymap-body:has(.key-sheet.expanded, .key-sheet.floating) { touch-action: none; }
   .sheet-handle {
     position: sticky;
     top: calc(var(--space-8) * -1);
