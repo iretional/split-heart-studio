@@ -3,7 +3,7 @@
   "short_name": "Split Studio",
   "description": "Keymap editor for the Split Heart keyboard",
   "id": "./",
-  "start_url": "./",
+  "start_url": "./?demo",
   "scope": "./",
   "display": "fullscreen",
   "display_override": [
@@ -32,8 +32,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Demo",
-      "url": "./?demo",
+      "name": "Connect a keyboard",
+      "short_name": "Keyboard",
+      "url": "./",
       "icons": [
         {
           "src": "icons/icon-192.png",
