@@ -3732,8 +3732,8 @@ button[data-fx-glitch] > :not(.btn-band) {
 }
 .popover button { display: flex; align-items: center; gap: var(--space-8); white-space: nowrap; }
 @media (max-width: 760.98px) {
-  /* Pushed down with the device block it sits on, and kept faint so it stays out of the way. */
-  .fullscreen-toggle {
+  /* Demo and Fullscreen: pushed down with the device block they sit on, and kept faint so they stay out of the way. */
+  .side-action {
     margin-top: auto;
     align-self: flex-start;
     align-items: center;
@@ -3742,7 +3742,9 @@ button[data-fx-glitch] > :not(.btn-band) {
     border: 0;
     background: transparent;
     color: var(--onsurface-muted);
+    text-decoration: none;
     opacity: 0.6;
   }
-  .fullscreen-toggle + .device { margin-top: 0; }
+  .side-action + .side-action,
+  .side-action + .device { margin-top: 0; }
 }

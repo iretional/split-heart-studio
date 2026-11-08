@@ -3,6 +3,7 @@ import type { Studio } from "../studio/useStudio";
 import { Icon, type IconName } from "./Icon";
 import { Overlay, useOverlay } from "./Overlay";
 import { useFullscreen } from "./useFullscreen";
+import { isDemo } from "../studio/demo";
 import { useHoverSelectFx } from "./useHoverSelectFx";
 
 export const PAGES = ["keymap", "layers", "settings", "motion"] as const;
@@ -56,7 +57,10 @@ export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastS
           </button>;
         })}
       </nav>
-      {fullscreen.supported && <button className="fullscreen-toggle mobile-only t-caption" aria-pressed={fullscreen.active} onClick={fullscreen.toggle}>
+      {/* A reload, since the app picks demo data or the keyboard when it starts. */}
+      <a className="side-action demo-link mobile-only t-caption" href={isDemo() ? "./" : "./?demo"}>
+        <Icon name="play" size={14} />{isDemo() ? "Exit demo" : "Demo"}</a>
+      {fullscreen.supported && <button className="side-action fullscreen-toggle mobile-only t-caption" aria-pressed={fullscreen.active} onClick={fullscreen.toggle}>
         <Icon name={fullscreen.active ? "fullscreenExit" : "fullscreen"} size={14} />{fullscreen.active ? "Exit fullscreen" : "Fullscreen"}</button>}
       <div className="device">
         <span className="t-caption muted">DEVICE</span>
