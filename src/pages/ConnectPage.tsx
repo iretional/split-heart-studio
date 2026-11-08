@@ -1,6 +1,8 @@
 import { Icon } from "../components/Icon";
 import { TopBar } from "../components/Shell";
 import { Notice } from "../components/ui";
+import { useLongPress } from "../components/useLongPress";
+import { setDemo } from "../studio/demo";
 import { useIsMobile } from "../studio/prefs";
 import type { Studio } from "../studio/useStudio";
 
@@ -11,9 +13,13 @@ const tips: [string, string][] = [
   ["Close other Studio tabs", "Only one app can use the port at a time."],
 ];
 
+/** Holding Connect Bluetooth this long opens the demo instead. */
+const DEMO_HOLD_MS = 2000;
+
 export function ConnectPage({ studio, onMenu }: { studio: Studio; onMenu: () => void }) {
   const { hasSerial, hasBluetooth, loading, error, connect } = studio;
   const mobile = useIsMobile();
+  const holdForDemo = useLongPress(DEMO_HOLD_MS, () => setDemo(true));
   const steps = mobile
     ? ["Pair Split Heart with this phone in Bluetooth settings", "Tap Connect Bluetooth and choose Split Heart", "If the keyboard is locked, hold System and press P"]
     : ["Plug the left half into this computer with a USB data cable", "Click Connect USB and choose the Split Heart serial port", "If the keyboard is locked, hold System and press P"];
@@ -29,7 +35,10 @@ export function ConnectPage({ studio, onMenu }: { studio: Studio; onMenu: () => 
         </ol>
         {mobile ? <div className="connect-mobile-actions">
           <Notice>Works in Chrome on Android. Browsers on iPhone can’t connect to keyboards.</Notice>
-          <button className="btn btn-primary connect-big" disabled={!hasBluetooth || loading} onClick={() => void connect("bluetooth")}>{loading ? "Connecting…" : "Connect Bluetooth"}</button>
+          {/* Held here rather than on the button, which can't be pressed while disabled, as on an iPhone. */}
+          <div className="connect-hold" {...holdForDemo}>
+            <button className="btn btn-primary connect-big" disabled={!hasBluetooth || loading} onClick={() => void connect("bluetooth")}>{loading ? "Connecting…" : "Connect Bluetooth"}</button>
+          </div>
         </div> : <div className="actions">
           <button className="btn btn-primary btn-lg" disabled={!hasSerial || loading} onClick={() => void connect("usb")}>
             {loading ? "Connecting…" : "Connect USB"}

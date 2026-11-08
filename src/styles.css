@@ -1864,6 +1864,13 @@ a.btn {
 .connect-big {
   height: 48px;
 }
+/* Holding Connect Bluetooth opens the demo. A disabled button lets the press through to this. */
+.connect-hold {
+  display: flex;
+  flex-direction: column;
+  -webkit-touch-callout: none;
+}
+.connect-hold .connect-big:disabled { pointer-events: none; }
 @media (max-width: 760.98px) {
   .connect-body {
     padding: var(--space-40) var(--space-20) var(--space-24);
