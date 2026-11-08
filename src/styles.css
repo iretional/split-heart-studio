@@ -249,6 +249,8 @@ p {
   display: grid;
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   height: 100vh;
+  /* What's visible: on a phone 100vh counts the hidden address bar, so the page would scroll by its height. */
+  height: 100dvh;
   overflow: hidden;
 }
 .main {
@@ -3690,9 +3692,12 @@ button[data-fx-glitch] > :not(.btn-band) {
     z-index: 12;
     flex: none;
   }
-  .key-sheet.expanded { height: 100dvh; border-radius: 0; overflow: hidden auto; }
-  /* A scroll only raises it this far, so the keyboard stays in reach above it. */
+  .key-sheet.expanded { height: 100dvh; border-radius: 0; overflow: hidden; }
+  /* Its first stop on the way up, so the keyboard stays in reach above it. */
   .key-sheet.expanded.half { height: 50dvh; border-radius: 12px 12px 0 0; }
+  /* Nothing on the page scrolls while the sheet is up: a scroll only moves the sheet. */
+  .keymap-body:has(.key-sheet.expanded, .key-sheet.floating),
+  .key-sheet.expanded { touch-action: none; }
   .sheet-handle {
     position: sticky;
     top: calc(var(--space-8) * -1);

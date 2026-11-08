@@ -23,8 +23,8 @@ type Stop = "rest" | "half" | "full";
 /**
  * A bottom sheet that is pulled up by its handle until it covers the screen. At rest it sits in the
  * page's flow; while it moves it floats over the page, because a flow height can't be animated.
- * The page around it can't scroll, so with `scrollMoves` a deliberate scroll down raises the sheet to half the screen.
- * Once open, a scroll up from the top of its content closes it again. Only the handle takes it all the way up.
+ * Neither the page nor the sheet scrolls, so with `scrollMoves` a deliberate scroll moves the sheet one stop instead:
+ * down raises it from rest to half the screen and then to all of it, up lowers it the same way.
  */
 export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
   const sheet = useRef<T>(null);
@@ -66,43 +66,44 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
 
   useEffect(() => {
     const el = sheet.current;
-    // A full sheet leaves no page to touch. At half, the keyboard above it answers too.
-    const target = stop === "full" ? el : el?.parentElement;
+    // The sheet sits inside this, so a scroll anywhere on the page counts, over the sheet or not.
+    const target = el?.parentElement;
     if (!scrollMoves || !el || !target) return;
-    const toward = stop === "rest" ? 1 : -1;
-    const move = () => {
+    const move = (toward: 1 | -1) => {
       if (drag.current || el.style.transition) return;
-      if (stop !== "rest") return settle("rest");
-      // On a screen where the sheet already fills half, there's nothing to raise it to.
-      if (restHeight(el) < window.innerHeight / 2) settle("half");
+      // On a screen where the sheet already fills half, there's no half stop to pass through.
+      const hasHalf = restHeight(el) < window.innerHeight / 2;
+      const stops: Stop[] = hasHalf ? ["rest", "half", "full"] : ["rest", "full"];
+      const next = stops[stops.indexOf(stop === "half" && !hasHalf ? "rest" : stop) + toward];
+      if (next) settle(next);
     };
-    // An open sheet scrolls its own content first, so it only closes from the top of that content.
-    const atEnd = () => stop === "rest" || el.scrollTop <= 0;
     let swipe: { x: number; y: number } | null = null;
     let wheeled = 0, lastWheel = 0, wheelCounts = true;
     const onTouchStart = (e: TouchEvent) => {
       const own = e.target instanceof Element && e.target.closest(OWN_GESTURE);
-      swipe = e.touches.length === 1 && !own && atEnd() ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+      swipe = e.touches.length === 1 && !own ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
     };
     const onTouchMove = (e: TouchEvent) => {
       if (!swipe) return;
-      if (e.touches.length !== 1 || !atEnd()) { swipe = null; return; }
-      const along = (swipe.y - e.touches[0].clientY) * toward, across = Math.abs(swipe.x - e.touches[0].clientX);
-      if (along < SWIPE_PX || along < across * 2) return;
+      if (e.touches.length !== 1) { swipe = null; return; }
+      const along = swipe.y - e.touches[0].clientY, across = Math.abs(swipe.x - e.touches[0].clientX);
+      if (Math.abs(along) < SWIPE_PX || Math.abs(along) < across * 2) return;
+      // One swipe moves one stop.
       swipe = null;
-      move();
+      move(along > 0 ? 1 : -1);
     };
     const onWheel = (e: WheelEvent) => {
-      // A wheel that was scrolling the content needs a pause first, or its momentum would close the sheet.
+      // A wheel has to pause before it moves the sheet again, or one flick's momentum would carry it two stops.
       if (e.timeStamp - lastWheel > WHEEL_RESET_MS) { wheeled = 0; wheelCounts = true; }
       lastWheel = e.timeStamp;
-      if (!atEnd()) wheelCounts = false;
-      const along = e.deltaY * toward;
-      if (!wheelCounts || along <= 0) { wheeled = 0; return; }
-      wheeled += along * (e.deltaMode === WheelEvent.DOM_DELTA_LINE ? LINE_PX : 1);
-      if (wheeled < WHEEL_PX) return;
+      if (!wheelCounts) return;
+      const delta = e.deltaY * (e.deltaMode === WheelEvent.DOM_DELTA_LINE ? LINE_PX : 1);
+      // A change of direction starts the count over.
+      wheeled = Math.sign(delta) === Math.sign(wheeled) ? wheeled + delta : delta;
+      if (Math.abs(wheeled) < WHEEL_PX) return;
+      wheelCounts = false;
+      move(wheeled > 0 ? 1 : -1);
       wheeled = 0;
-      move();
     };
     target.addEventListener("touchstart", onTouchStart, { passive: true });
     target.addEventListener("touchmove", onTouchMove, { passive: true });
