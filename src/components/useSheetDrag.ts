@@ -8,7 +8,7 @@ const SETTLE_MS = 200;
 /** How far along its travel a drag has to get before the sheet goes the rest of the way. */
 const COMMIT = 0.25;
 /** Share of the screen the sheet covers at rest, and raised. Keep in step with `.key-sheet` in styles.css. */
-const REST = 0.25;
+const REST = 0.35;
 const OPEN = 0.75;
 /** A finger has to travel this far, mostly straight, for a swipe to count as a scroll. */
 const SWIPE_PX = 56;
@@ -21,7 +21,7 @@ const LINE_PX = 16;
 const OWN_GESTURE = ".sheet-handle, input, textarea, select, [draggable=true]";
 
 /**
- * A bottom sheet over the foot of the page, with two sizes: a quarter of the screen at rest, three quarters raised.
+ * A bottom sheet over the foot of the page, with two sizes: 35% of the screen at rest, three quarters raised.
  * Its handle drags or toggles it. Neither the page nor the sheet scrolls, so with `scrollMoves` a deliberate
  * scroll down raises the sheet and a scroll up lowers it.
  */
