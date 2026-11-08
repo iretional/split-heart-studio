@@ -3677,8 +3677,8 @@ button[data-fx-glitch] > :not(.btn-band) {
     align-self: center;
     overflow: hidden;
   }
-  /* At rest just tall enough to end under its last row, raised three quarters of the screen (OPEN in useSheetDrag).
-     Nothing in it scrolls: a scroll only raises or lowers it. */
+  /* At rest it shows only its first row, the key's header; raised it covers three quarters of the screen (OPEN in
+     useSheetDrag). Nothing in it scrolls: a scroll only raises or lowers it. */
   .key-sheet {
     position: fixed;
     left: 0;
@@ -3690,6 +3690,8 @@ button[data-fx-glitch] > :not(.btn-band) {
     touch-action: none;
   }
   .key-sheet.expanded { height: 75dvh; }
+  /* The rest of the content waits for the sheet to rise. While it moves, it shows, clipped by the sheet's height. */
+  .key-sheet:not(.expanded, .floating) > :not(.sheet-handle, [data-sheet-rest]) { display: none; }
   /* While the sheet is up, a swipe down lowers it, so it must not also reload the page or move anything else. */
   html:has(.key-sheet.expanded, .key-sheet.floating),
   html:has(.key-sheet.expanded, .key-sheet.floating) body { overscroll-behavior-y: none; }

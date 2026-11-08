@@ -20,7 +20,8 @@ const LINE_PX = 16;
 const OWN_GESTURE = ".sheet-handle, input, textarea, select, [draggable=true]";
 
 /**
- * A bottom sheet over the foot of the page, with two sizes: at rest just tall enough for its content, three quarters raised.
+ * A bottom sheet over the foot of the page, with two sizes: at rest it shows down to its `[data-sheet-rest]` row
+ * (or all of its content without one), raised it covers three quarters of the screen.
  * Its handle drags or toggles it. Neither the page nor the sheet scrolls, so with `scrollMoves` a deliberate
  * scroll down raises the sheet and a scroll up lowers it.
  */
@@ -33,10 +34,11 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const heightOf = (open: boolean) => {
-    const full = window.innerHeight * OPEN, el = sheet.current, last = el?.lastElementChild;
-    if (open || !el || !last) return full;
-    // At rest the sheet ends right under its last row. Its content lays out from the top, whatever height it has now.
-    const content = last.getBoundingClientRect().bottom - el.getBoundingClientRect().top + parseFloat(getComputedStyle(el).paddingBottom);
+    const full = window.innerHeight * OPEN, el = sheet.current;
+    const end = el && (el.querySelector("[data-sheet-rest]") ?? el.lastElementChild);
+    if (open || !el || !end) return full;
+    // At rest the sheet ends right under that row. Its content lays out from the top, whatever height it has now.
+    const content = end.getBoundingClientRect().bottom - el.getBoundingClientRect().top + parseFloat(getComputedStyle(el).paddingBottom);
     return Math.min(full, content);
   };
 
