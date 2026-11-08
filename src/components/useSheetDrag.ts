@@ -7,8 +7,7 @@ const TAP_PX = 4;
 const SETTLE_MS = 200;
 /** How far along its travel a drag has to get before the sheet goes the rest of the way. */
 const COMMIT = 0.25;
-/** Share of the screen the sheet covers at rest, and raised. Keep in step with `.key-sheet` in styles.css. */
-const REST = 0.35;
+/** Share of the screen the sheet covers raised, and at most at rest. Keep in step with `.key-sheet` in styles.css. */
 const OPEN = 0.75;
 /** A finger has to travel this far, mostly straight, for a swipe to count as a scroll. */
 const SWIPE_PX = 56;
@@ -21,7 +20,7 @@ const LINE_PX = 16;
 const OWN_GESTURE = ".sheet-handle, input, textarea, select, [draggable=true]";
 
 /**
- * A bottom sheet over the foot of the page, with two sizes: 35% of the screen at rest, three quarters raised.
+ * A bottom sheet over the foot of the page, with two sizes: at rest just tall enough for its content, three quarters raised.
  * Its handle drags or toggles it. Neither the page nor the sheet scrolls, so with `scrollMoves` a deliberate
  * scroll down raises the sheet and a scroll up lowers it.
  */
@@ -33,7 +32,13 @@ export function useSheetDrag<T extends HTMLElement>(scrollMoves = false) {
   const timer = useRef<number>();
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const heightOf = (open: boolean) => window.innerHeight * (open ? OPEN : REST);
+  const heightOf = (open: boolean) => {
+    const full = window.innerHeight * OPEN, el = sheet.current, last = el?.lastElementChild;
+    if (open || !el || !last) return full;
+    // At rest the sheet ends right under its last row. Its content lays out from the top, whatever height it has now.
+    const content = last.getBoundingClientRect().bottom - el.getBoundingClientRect().top + parseFloat(getComputedStyle(el).paddingBottom);
+    return Math.min(full, content);
+  };
 
   const float = (el: T, height: number) => {
     flushSync(() => setFloating(true));

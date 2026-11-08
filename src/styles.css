@@ -3677,17 +3677,15 @@ button[data-fx-glitch] > :not(.btn-band) {
     align-self: center;
     overflow: hidden;
   }
-  /* The page keeps clear of the sheet at rest. */
-  .keymap-body { padding-bottom: 35dvh; }
-  /* 35% of the screen at rest, three quarters raised (REST and OPEN in useSheetDrag). Nothing in it scrolls:
-     a scroll only raises or lowers it, and what doesn't fit at rest is reached by raising it. */
+  /* At rest just tall enough to end under its last row, raised three quarters of the screen (OPEN in useSheetDrag).
+     Nothing in it scrolls: a scroll only raises or lowers it. */
   .key-sheet {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 12;
-    height: 35dvh;
+    max-height: 75dvh;
     overflow: hidden;
     touch-action: none;
   }
