@@ -3,7 +3,7 @@ import type { Studio } from "../studio/useStudio";
 import { Icon, type IconName } from "./Icon";
 import { Overlay, useOverlay } from "./Overlay";
 import { useFullscreen } from "./useFullscreen";
-import { isDemo } from "../studio/demo";
+import { setDemo, useIsDemo } from "../studio/demo";
 import { useHoverSelectFx } from "./useHoverSelectFx";
 
 export const PAGES = ["keymap", "layers", "settings", "motion"] as const;
@@ -36,6 +36,7 @@ export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastS
   const fx = useHoverSelectFx<Page>();
   const stage = useOverlay(open);
   const fullscreen = useFullscreen();
+  const demo = useIsDemo();
   return <>
     <Overlay open={open}><div className="scrim drawer-scrim" onClick={onClose} /></Overlay>
     <aside className={"sidebar" + (open ? " open" : "") + (stage ? " overlay-" + stage : "")}>
@@ -57,9 +58,10 @@ export function Sidebar({ page, onNavigate, navEnabled, device, connected, lastS
           </button>;
         })}
       </nav>
-      {/* A reload, since the app picks demo data or the keyboard when it starts. */}
-      <a className="side-action demo-link mobile-only t-caption" href={isDemo() ? "./" : "./?demo"}>
-        <Icon name="play" size={14} />{isDemo() ? "Exit demo" : "Demo"}</a>
+      {/* Switched in place rather than followed, so fullscreen stays on. */}
+      <a className="side-action demo-link mobile-only t-caption" href={demo ? "./" : "./?demo"}
+        onClick={e => { e.preventDefault(); setDemo(!demo); onClose(); }}>
+        <Icon name="play" size={14} />{demo ? "Exit demo" : "Demo"}</a>
       {fullscreen.supported && <button className="side-action fullscreen-toggle mobile-only t-caption" aria-pressed={fullscreen.active} onClick={fullscreen.toggle}>
         <Icon name={fullscreen.active ? "fullscreenExit" : "fullscreen"} size={14} />{fullscreen.active ? "Exit fullscreen" : "Fullscreen"}</button>}
       <div className="device">

@@ -1,6 +1,6 @@
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import type { BehaviorBinding, Keymap, KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { ALL_KEYCODES } from "../keyLabels";
 import type { RemovedLayer, Studio } from "./useStudio";
 
@@ -175,6 +175,27 @@ const keymap: Keymap = {
 } as Keymap;
 
 export const isDemo = () => new URLSearchParams(window.location.search).has("demo");
+
+const DEMO_CHANGE = "demochange";
+const onDemoChange = (changed: () => void) => {
+  window.addEventListener(DEMO_CHANGE, changed);
+  window.addEventListener("popstate", changed);
+  return () => {
+    window.removeEventListener(DEMO_CHANGE, changed);
+    window.removeEventListener("popstate", changed);
+  };
+};
+
+/** Whether the demo is on, following setDemo. */
+export const useIsDemo = () => useSyncExternalStore(onDemoChange, isDemo);
+
+/** Turns the demo on or off in place. Only the address changes: a reload would also end fullscreen. */
+export function setDemo(on: boolean) {
+  const url = new URL(window.location.href);
+  url.search = on ? "?demo" : "";
+  history.replaceState(history.state, "", url);
+  window.dispatchEvent(new Event(DEMO_CHANGE));
+}
 
 /** Same surface as useStudio, kept in memory so every screen can be exercised without a keyboard. */
 export function useDemoStudio(real: Studio): Studio {

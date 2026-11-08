@@ -6,7 +6,7 @@ import { KeymapPage, type KeyFocus } from "./pages/KeymapPage";
 import { LayersPage } from "./pages/LayersPage";
 import { MotionPage } from "./pages/MotionPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { isDemo, useDemoStudio } from "./studio/demo";
+import { useDemoStudio, useIsDemo } from "./studio/demo";
 import { usePrefs } from "./studio/prefs";
 import { useStudio } from "./studio/useStudio";
 
@@ -28,7 +28,7 @@ function useHashPage(): [Page, (p: Page) => void] {
 export default function App() {
   const real = useStudio();
   const demo = useDemoStudio(real);
-  const studio = isDemo() ? demo : real;
+  const studio = useIsDemo() ? demo : real;
   const prefs = usePrefs();
   const [page, navigate] = useHashPage();
   const [menuOpen, setMenuOpen] = useState(false);
